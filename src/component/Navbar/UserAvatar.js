@@ -1,6 +1,5 @@
-import { withTranslation } from "react-i18next";
-import React, { Component } from "react";
-import PropTypes from "prop-types";
+import { useTranslation } from "react-i18next";
+import React  from "react";
 import { connect } from "react-redux";
 import SettingIcon from "@material-ui/icons/Settings";
 import UserAvatarPopover from "./UserAvatarPopover";
@@ -12,9 +11,9 @@ import {
     Grow,
     Avatar,
     IconButton,
-    Tooltip,
+    Tooltip
 } from "@material-ui/core";
-import { withRouter } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 import pathHelper from "../../utils/page";
 import DarkModeSwitcher from "./DarkModeSwitcher";
 import { Home } from "@material-ui/icons";
@@ -25,7 +24,7 @@ const mapStateToProps = (state) => {
         isMultiple: state.explorer.selectProps.isMultiple,
         withFolder: state.explorer.selectProps.withFolder,
         withFile: state.explorer.selectProps.withFile,
-        isLogin: state.viewUpdate.isLogin,
+        isLogin: state.viewUpdate.isLogin
     };
 };
 
@@ -33,141 +32,124 @@ const mapDispatchToProps = (dispatch) => {
     return {
         setUserPopover: (anchor) => {
             dispatch(setUserPopover(anchor));
-        },
+        }
     };
 };
 
 const styles = (theme) => ({
     mobileHidden: {
         [theme.breakpoints.down("xs")]: {
-            display: "none",
+            display: "none"
         },
-        whiteSpace: "nowrap",
+        whiteSpace: "nowrap"
     },
     avatar: {
         width: "30px",
-        height: "30px",
+        height: "30px"
     },
     header: {
         display: "flex",
-        padding: "20px 20px 20px 20px",
+        padding: "20px 20px 20px 20px"
     },
     largeAvatar: {
         height: "90px",
-        width: "90px",
+        width: "90px"
     },
     info: {
         marginLeft: "10px",
-        width: "139px",
+        width: "139px"
     },
     badge: {
-        marginTop: "10px",
+        marginTop: "10px"
     },
     visitorMenu: {
-        width: 200,
-    },
+        width: 200
+    }
 });
 
-class UserAvatarCompoment extends Component {
-    state = {
-        anchorEl: null,
-    };
+function UserAvatarComponent(props) {
+    const {t} = useTranslation();
+    const history = useHistory();
 
-    showUserInfo = (e) => {
-        this.props.setUserPopover(e.currentTarget);
-    };
-
-    handleClose = () => {
-        this.setState({
-            anchorEl: null,
-        });
-    };
-
-    openURL = (url) => {
-        window.location.href = url;
-    };
-
-    returnHome = () => {
-        window.location.href = "/home";
-    };
-
-    render() {
-        const { classes } = this.props;
-        const loginCheck = Auth.Check(this.props.isLogin);
-        const user = Auth.GetUser(this.props.isLogin);
-        const isAdminPage = pathHelper.isAdminPage(
-            this.props.location.pathname
-        );
-
-        return (
-          <div className={classes.mobileHidden}>
-              <Grow
-                  in={
-                      this.props.selected.length <= 1 &&
-                      !(!this.props.isMultiple && this.props.withFile)
-                  }
-              >
-                  <div>
-                      {!isAdminPage && (
-                          <>
-                              <DarkModeSwitcher position="top" />
-                              {loginCheck && (
-                                  <>
-                                      <Tooltip
-                                          title={this.props.t('Settings')}
-                                          placement="bottom"
-                                      >
-                                          <IconButton
-                                              onClick={() =>
-                                                  this.props.history.push(
-                                                      "/setting?"
-                                                  )
-                                              }
-                                              color="inherit"
-                                          >
-                                              <SettingIcon />
-                                          </IconButton>
-                                      </Tooltip>
-                                  </>
-                              )}
-                          </>
-                      )}
-                      {isAdminPage && (
-                          <Tooltip title={this.props.t('return to home page')} placement="bottom">
-                              <IconButton
-                                  color="inherit"
-                                  onClick={this.returnHome}
-                              >
-                                  <Home />
-                              </IconButton>
-                          </Tooltip>
-                      )}
-                      <IconButton color="inherit" onClick={this.showUserInfo}>
-                          {!loginCheck && <AccountCircle />}
-                          {loginCheck && (
-                              <Avatar
-                                  src={
-                                      "/api/v3/user/avatar/" + user.id + "/s"
-                                  }
-                                  className={classes.avatar}
-                              />
-                          )}
-                      </IconButton>{" "}
-                  </div>
-              </Grow>
-              <UserAvatarPopover />
-          </div>
-        );
+    function showUserInfo(e) {
+        props.setUserPopover(e.currentTarget);
     }
-}
 
-UserAvatarCompoment.propTypes = {
-    classes: PropTypes.object.isRequired,
-};
+    function returnHome() {
+        window.location.href = "/home";
+    }
+
+    const { classes } = props;
+    const loginCheck = Auth.Check(props.isLogin);
+    const user = Auth.GetUser(props.isLogin);
+    const isAdminPage = pathHelper.isAdminPage(
+        props.location.pathname
+    );
+
+    return (
+        <div className={classes.mobileHidden}>
+            <Grow
+                in={
+                    props.selected.length <= 1 &&
+                    !(!props.isMultiple && props.withFile)
+                }
+            >
+                <div>
+                    {!isAdminPage && (
+                        <>
+                            <DarkModeSwitcher position="top" />
+                            {loginCheck && (
+                                <>
+                                    <Tooltip
+                                        title={t("Settings")}
+                                        placement="bottom"
+                                    >
+                                        <IconButton
+                                            onClick={() =>
+                                                history.push(
+                                                    "/setting?"
+                                                )
+                                            }
+                                            color="inherit"
+                                        >
+                                            <SettingIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                </>
+                            )}
+                        </>
+                    )}
+                    {isAdminPage && (
+                        <Tooltip title={t("return to home page")} placement="bottom">
+                            <IconButton
+                                color="inherit"
+                                onClick={returnHome}
+                            >
+                                <Home />
+                            </IconButton>
+                        </Tooltip>
+                    )}
+                    <IconButton color="inherit" onClick={showUserInfo}>
+                        {!loginCheck && <AccountCircle />}
+                        {loginCheck && (
+                            <Avatar
+                                src={
+                                    "/api/v3/user/avatar/" + user.id + "/s"
+                                }
+                                className={classes.avatar}
+                            />
+                        )}
+                    </IconButton>{" "}
+                </div>
+            </Grow>
+            <UserAvatarPopover />
+        </div>
+    );
+}
 
 const UserAvatar = connect(
     mapStateToProps,
     mapDispatchToProps
-)(withTranslation()(withStyles(styles)(withRouter(UserAvatarCompoment))));
+)((withStyles(styles)(UserAvatarComponent)));
 
 export default UserAvatar;

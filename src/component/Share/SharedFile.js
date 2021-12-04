@@ -1,5 +1,5 @@
-import { withTranslation } from "react-i18next";
-import React, { Component } from "react";
+import { useTranslation } from "react-i18next";
+import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { sizeToString, vhCheck } from "../../utils";
 import {
@@ -7,7 +7,7 @@ import {
     openResaveDialog,
     setSelectedTarget,
     showImgPreivew,
-    toggleSnackbar,
+    toggleSnackbar
 } from "../../actions";
 import { isPreviewable } from "../../config";
 import { withStyles, Button, Typography } from "@material-ui/core";
@@ -15,7 +15,7 @@ import Divider from "@material-ui/core/Divider";
 import TypeIcon from "../FileManager/TypeIcon";
 import Auth from "../../middleware/Auth";
 import API from "../../middleware/Api";
-import { withRouter } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 import Creator from "./Creator";
 import pathHelper from "../../utils/page";
 
@@ -30,35 +30,35 @@ const styles = (theme) => ({
             width: 1100,
             marginTop: "90px",
             marginLeft: "auto",
-            marginRight: "auto",
+            marginRight: "auto"
         },
         [theme.breakpoints.down("sm")]: {
             marginTop: 0,
             marginLeft: 0,
-            marginRight: 0,
+            marginRight: 0
         },
         justifyContent: "center",
-        display: "flex",
+        display: "flex"
     },
     player: {
-        borderRadius: "4px",
+        borderRadius: "4px"
     },
     fileCotainer: {
         width: "200px",
-        margin: "0 auto",
+        margin: "0 auto"
     },
     buttonCotainer: {
         width: "400px",
         margin: "0 auto",
         textAlign: "center",
-        marginTop: "20px",
+        marginTop: "20px"
     },
     paper: {
-        padding: theme.spacing(2),
+        padding: theme.spacing(2)
     },
     icon: {
         borderRadius: "10%",
-        marginTop: 2,
+        marginTop: 2
     },
 
     box: {
@@ -70,31 +70,31 @@ const styles = (theme) => ({
         [theme.breakpoints.down("sm")]: {
             height: "calc(var(--vh, 100vh) - 56px)",
             borderRadius: 0,
-            maxWidth: 1000,
+            maxWidth: 1000
         },
         display: "flex",
-        flexDirection: "column",
+        flexDirection: "column"
     },
     boxContent: {
         padding: 24,
         display: "flex",
-        flex: "1",
+        flex: "1"
     },
     fileName: {
-        marginLeft: 20,
+        marginLeft: 20
     },
     fileSize: {
         color: theme.palette.text.disabled,
-        fontSize: 14,
+        fontSize: 14
     },
     boxFooter: {
         display: "flex",
         padding: "20px 16px",
-        justifyContent: "space-between",
+        justifyContent: "space-between"
     },
     downloadButton: {
-        marginLeft: 8,
-    },
+        marginLeft: 8
+    }
 });
 const mapStateToProps = () => {
     return {};
@@ -116,117 +116,121 @@ const mapDispatchToProps = (dispatch) => {
         },
         openResave: (key) => {
             dispatch(openResaveDialog(key));
-        },
+        }
     };
 };
 
 const Modals = React.lazy(() => import("../FileManager/Modals"));
 const ImgPreview = React.lazy(() => import("../FileManager/ImgPreview"));
 
-class SharedFileCompoment extends Component {
-    state = {
+function SharedFileComponent(props) {
+    const [state, setState] = useState({
         anchorEl: null,
         open: false,
         purchaseCallback: null,
-        loading: false,
-    };
+        loading: false
+    });
 
-    downloaded = false;
+    const { t } = useTranslation();
+    const history = useHistory();
 
     // TODO merge into react thunk
-    preview = () => {
-        if (pathHelper.isSharePage(this.props.location.pathname)) {
+    function preview() {
+        if (pathHelper.isSharePage(props.location.pathname)) {
             const user = Auth.GetUser();
             if (!Auth.Check() && user && !user.group.shareDownload) {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
-                    this.props.t('please log in first'),
+                    t("please log in first"),
                     "warning"
                 );
                 return;
             }
         }
 
-        switch (isPreviewable(this.props.share.source.name)) {
+        switch (isPreviewable(props.share.source.name)) {
             case "img":
-                this.props.showImgPreivew({
-                    key: this.props.share.key,
-                    name: this.props.share.source.name,
+                props.showImgPreivew({
+                    key: props.share.key,
+                    name: props.share.source.name
                 });
                 return;
             case "msDoc":
-                this.props.history.push(
-                    this.props.share.key +
-                        "/doc?name=" +
-                        encodeURIComponent(this.props.share.source.name)
+                history.push(
+                    props.share.key +
+                    "/doc?name=" +
+                    encodeURIComponent(props.share.source.name)
                 );
                 return;
             case "audio":
-                this.props.setSelectedTarget([
+                props.setSelectedTarget([
                     {
-                        key: this.props.share.key,
-                        type: "share",
-                    },
+                        key: props.share.key,
+                        type: "share"
+                    }
                 ]);
-                this.props.openMusicDialog();
+                props.openMusicDialog();
                 return;
             case "video":
-                this.props.history.push(
-                    this.props.share.key +
-                        "/video?name=" +
-                        encodeURIComponent(this.props.share.source.name)
+                history.push(
+                    props.share.key +
+                    "/video?name=" +
+                    encodeURIComponent(props.share.source.name)
                 );
                 return;
             case "edit":
-                this.props.history.push(
-                    this.props.share.key +
-                        "/text?name=" +
-                        encodeURIComponent(this.props.share.source.name)
+                history.push(
+                    props.share.key +
+                    "/text?name=" +
+                    encodeURIComponent(props.share.source.name)
                 );
                 return;
             case "pdf":
-                this.props.history.push(
-                    this.props.share.key +
-                        "/pdf?name=" +
-                        encodeURIComponent(this.props.share.source.name)
+                history.push(
+                    props.share.key +
+                    "/pdf?name=" +
+                    encodeURIComponent(props.share.source.name)
                 );
                 return;
             case "code":
-                this.props.history.push(
-                    this.props.share.key +
-                        "/code?name=" +
-                        encodeURIComponent(this.props.share.source.name)
+                history.push(
+                    props.share.key +
+                    "/code?name=" +
+                    encodeURIComponent(props.share.source.name)
                 );
                 return;
             default:
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
-                    this.props.t('This file cannot be previewed'),
+                    t("This file cannot be previewed"),
                     "warning"
                 );
                 return;
         }
-    };
-
-    componentWillUnmount() {
-        this.props.setSelectedTarget([]);
     }
 
-    scoreHandle = (callback) => (event) => {
-        callback(event);
-    };
+    useEffect(() => {
+        return function cleanup() {
+            props.setSelectedTarget([]);
+        };
+    }, []);
 
-    download = () => {
-        this.setState({ loading: true });
-        API.put("/share/download/" + this.props.share.key)
+    function scoreHandle(callback) {
+        return (event) => {
+            callback(event);
+        };
+    }
+
+    function download() {
+        setState({ ...state, loading: true });
+        API.put("/share/download/" + props.share.key)
             .then((response) => {
-                this.downloaded = true;
                 window.location.assign(response.data);
             })
             .catch((error) => {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
                     error.message,
@@ -234,69 +238,67 @@ class SharedFileCompoment extends Component {
                 );
             })
             .then(() => {
-                this.setState({ loading: false });
+                setState({ ...state, loading: false });
             });
-    };
-
-    render() {
-        const { classes } = this.props;
-        return (
-          <div className={classes.layout}>
-              <Modals />
-              <ImgPreview />
-              <div className={classes.box}>
-                  <Creator share={this.props.share} />
-                  <Divider />
-                  <div className={classes.boxContent}>
-                      <TypeIcon
-                          className={classes.icon}
-                          isUpload
-                          fileName={this.props.share.source.name}
-                      />
-                      <div className={classes.fileName}>
-                          <Typography style={{ wordBreak: "break-all" }}>
-                              {this.props.share.source.name}
-                          </Typography>
-                          <Typography className={classes.fileSize}>
-                              {sizeToString(this.props.share.source.size)}
-                          </Typography>
-                      </div>
-                  </div>
-                  <Divider />
-                  <div className={classes.boxFooter}>
-                      <div className={classes.actionLeft}>
-                          {this.props.share.preview && (
-                              (<Button
-                                  variant="outlined"
-                                  color="secondary"
-                                  onClick={this.scoreHandle(this.preview)}
-                                  disabled={this.state.loading}
-                              >
-                                {this.props.t('Preview')}
-                              </Button>)
-                          )}
-                      </div>
-                      <div className={classes.actions}>
-                          <Button
-                              variant="contained"
-                              color="secondary"
-                              className={classes.downloadButton}
-                              onClick={this.scoreHandle(this.download)}
-                              disabled={this.state.loading}
-                          >
-                            {this.props.t('download')}
-                          </Button>
-                      </div>
-                  </div>
-              </div>
-          </div>
-        );
     }
+
+    const { classes } = props;
+    return (
+        <div className={classes.layout}>
+            <Modals />
+            <ImgPreview />
+            <div className={classes.box}>
+                <Creator share={props.share} />
+                <Divider />
+                <div className={classes.boxContent}>
+                    <TypeIcon
+                        className={classes.icon}
+                        isUpload
+                        fileName={props.share.source.name}
+                    />
+                    <div className={classes.fileName}>
+                        <Typography style={{ wordBreak: "break-all" }}>
+                            {props.share.source.name}
+                        </Typography>
+                        <Typography className={classes.fileSize}>
+                            {sizeToString(props.share.source.size)}
+                        </Typography>
+                    </div>
+                </div>
+                <Divider />
+                <div className={classes.boxFooter}>
+                    <div className={classes.actionLeft}>
+                        {props.share.preview && (
+                            (<Button
+                                variant="outlined"
+                                color="secondary"
+                                onClick={scoreHandle(preview)}
+                                disabled={state.loading}
+                            >
+                                {t("Preview")}
+                            </Button>)
+                        )}
+                    </div>
+                    <div className={classes.actions}>
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            className={classes.downloadButton}
+                            onClick={scoreHandle(download)}
+                            disabled={state.loading}
+                        >
+                            {t("download")}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 const SharedFile = connect(
     mapStateToProps,
     mapDispatchToProps
-)(withTranslation()(withStyles(styles)(withRouter(SharedFileCompoment))));
+)((withStyles(styles)(SharedFileComponent)));
 
 export default SharedFile;

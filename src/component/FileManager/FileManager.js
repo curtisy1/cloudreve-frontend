@@ -1,13 +1,13 @@
-import React, { Component } from "react";
+import React, { useEffect } from "react";
 import { DndProvider } from "react-dnd";
 import HTML5Backend from "react-dnd-html5-backend";
 import { connect } from "react-redux";
-import { withRouter } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
     closeAllModals,
     navigateTo,
     setSelectedTarget,
-    toggleSnackbar,
+    toggleSnackbar
 } from "../../actions";
 import { changeSubTitle } from "../../redux/viewUpdate/action";
 import pathHelper from "../../utils/page";
@@ -35,47 +35,42 @@ const mapDispatchToProps = (dispatch) => {
         },
         navigateTo: (path) => {
             dispatch(navigateTo(path));
-        },
+        }
     };
 };
 
-class FileManager extends Component {
-    constructor(props) {
-        super(props);
-        this.image = React.createRef();
-    }
-    componentWillUnmount() {
-        this.props.setSelectedTarget([]);
-        this.props.closeAllModals();
-        this.props.navigateTo("/");
-    }
+function FileManager(props) {
+    const location = useLocation();
 
-    componentDidMount() {
-        if (pathHelper.isHomePage(this.props.location.pathname)) {
-            this.props.changeSubTitle(null);
+    useEffect(() => {
+        if (pathHelper.isHomePage(location.pathname)) {
+            props.changeSubTitle(null);
         }
-    }
-    render() {
-        return (
-            <div>
-                <DndProvider backend={HTML5Backend}>
-                    <Modals share={this.props.share} />
-                    <Navigator
-                        isShare={this.props.isShare}
-                        share={this.props.share}
-                    />
-                    <Explorer share={this.props.share} />
-                    <DragLayer />
-                </DndProvider>
-                <SideDrawer />
-            </div>
-        );
-    }
-}
 
-FileManager.propTypes = {};
+        return function cleanup() {
+            props.setSelectedTarget([]);
+            props.closeAllModals();
+            props.navigateTo("/");
+        };
+    }, []);
+
+    return (
+        <div>
+            <DndProvider backend={HTML5Backend}>
+                <Modals share={props.share} />
+                <Navigator
+                    isShare={props.isShare}
+                    share={props.share}
+                />
+                <Explorer share={props.share} />
+                <DragLayer />
+            </DndProvider>
+            <SideDrawer />
+        </div>
+    );
+}
 
 export default connect(
     mapStateToProps,
     mapDispatchToProps
-)(withRouter(FileManager));
+)(FileManager);

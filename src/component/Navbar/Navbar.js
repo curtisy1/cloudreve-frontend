@@ -1,6 +1,5 @@
-import { withTranslation } from "react-i18next";
-import React, { Component } from "react";
-import PropTypes from "prop-types";
+import { useTranslation } from "react-i18next";
+import React, { useEffect, useState } from "react";
 import classNames from "classnames";
 import { connect } from "react-redux";
 import ShareIcon from "@material-ui/icons/Share";
@@ -31,12 +30,12 @@ import {
     openRenameDialog,
     openLoadingDialog,
     setSessionStatus,
-    openPreview,
+    openPreview
 } from "../../actions";
 import {
     allowSharePreview,
     checkGetParameters,
-    changeThemeColor,
+    changeThemeColor
 } from "../../utils";
 import Uploader from "../Upload/Uploader.js";
 import { sizeToString, vhCheck } from "../../utils";
@@ -47,7 +46,7 @@ import UserAvatar from "./UserAvatar";
 import LanguageSwitcher from "./LanguageSwitcher";
 import UserInfo from "./UserInfo";
 import { AccountArrowRight, AccountPlus, LogoutVariant } from "mdi-material-ui";
-import { withRouter } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import {
     AppBar,
     Toolbar,
@@ -63,7 +62,7 @@ import {
     ListItemText,
     List,
     Grow,
-    Tooltip,
+    Tooltip
 } from "@material-ui/core";
 import Auth from "../../middleware/Auth";
 import API from "../../middleware/Api";
@@ -88,7 +87,7 @@ const mapStateToProps = (state) => {
         title: state.siteConfig.title,
         subTitle: state.viewUpdate.subTitle,
         loadUploader: state.viewUpdate.loadUploader,
-        isLogin: state.viewUpdate.isLogin,
+        isLogin: state.viewUpdate.isLogin
     };
 };
 
@@ -144,7 +143,7 @@ const mapDispatchToProps = (dispatch) => {
         },
         openPreview: () => {
             dispatch(openPreview());
-        },
+        }
     };
 };
 
@@ -152,231 +151,225 @@ const styles = (theme) => ({
     appBar: {
         marginLeft: drawerWidth,
         [theme.breakpoints.down("xs")]: {
-            marginLeft: drawerWidthMobile,
+            marginLeft: drawerWidthMobile
         },
         zIndex: theme.zIndex.drawer + 1,
-        transition: " background-color 250ms",
+        transition: " background-color 250ms"
     },
 
     drawer: {
         width: 0,
-        flexShrink: 0,
+        flexShrink: 0
     },
     drawerDesktop: {
         width: drawerWidth,
-        flexShrink: 0,
+        flexShrink: 0
     },
     icon: {
-        marginRight: theme.spacing(2),
+        marginRight: theme.spacing(2)
     },
     menuButton: {
         marginRight: 20,
         [theme.breakpoints.up("sm")]: {
-            display: "none",
-        },
+            display: "none"
+        }
     },
     menuButtonDesktop: {
         marginRight: 20,
         [theme.breakpoints.down("sm")]: {
-            display: "none",
-        },
+            display: "none"
+        }
     },
     menuIcon: {
-        marginRight: 20,
+        marginRight: 20
     },
     toolbar: theme.mixins.toolbar,
     drawerPaper: {
-        width: drawerWidthMobile,
+        width: drawerWidthMobile
     },
     drawerPaperDesktop: {
-        width: drawerWidth,
+        width: drawerWidth
     },
     upDrawer: {
-        overflowX: "hidden",
+        overflowX: "hidden"
     },
     drawerOpen: {
         width: drawerWidth,
         transition: theme.transitions.create("width", {
             easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-        }),
+            duration: theme.transitions.duration.enteringScreen
+        })
     },
     drawerClose: {
         transition: theme.transitions.create("width", {
             easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
+            duration: theme.transitions.duration.leavingScreen
         }),
         overflowX: "hidden",
-        width: 0,
+        width: 0
     },
     content: {
         flexGrow: 1,
-        padding: theme.spacing(3),
+        padding: theme.spacing(3)
     },
     grow: {
-        flexGrow: 1,
+        flexGrow: 1
     },
     badge: {
         top: 1,
-        right: -15,
+        right: -15
     },
     nested: {
-        paddingLeft: theme.spacing(4),
+        paddingLeft: theme.spacing(4)
     },
     sectionForFile: {
-        display: "flex",
+        display: "flex"
     },
     extendedIcon: {
-        marginRight: theme.spacing(1),
+        marginRight: theme.spacing(1)
     },
     addButton: {
         marginLeft: "40px",
         marginTop: "25px",
-        marginBottom: "15px",
+        marginBottom: "15px"
     },
     fabButton: {
-        borderRadius: "100px",
+        borderRadius: "100px"
     },
     badgeFix: {
-        right: "10px",
+        right: "10px"
     },
     iconFix: {
-        marginLeft: "16px",
+        marginLeft: "16px"
     },
     dividerFix: {
-        marginTop: "8px",
+        marginTop: "8px"
     },
     folderShareIcon: {
         verticalAlign: "sub",
-        marginRight: "5px",
+        marginRight: "5px"
     },
     shareInfoContainer: {
         display: "flex",
         marginTop: "15px",
         marginBottom: "20px",
         marginLeft: "28px",
-        textDecoration: "none",
+        textDecoration: "none"
     },
     shareAvatar: {
         width: "40px",
-        height: "40px",
+        height: "40px"
     },
     stickFooter: {
         bottom: "0px",
         position: "absolute",
         backgroundColor: theme.palette.background.paper,
-        width: "100%",
+        width: "100%"
     },
     ownerInfo: {
         marginLeft: "10px",
-        width: "150px",
+        width: "150px"
     },
     minStickDrawer: {
         overflowY: "auto",
         [theme.breakpoints.up("sm")]: {
-            height: "calc(var(--vh, 100vh) - 145px)",
+            height: "calc(var(--vh, 100vh) - 145px)"
         },
 
         [theme.breakpoints.down("sm")]: {
-            minHeight: "calc(var(--vh, 100vh) - 360px)",
-        },
-    },
-});
-class NavbarCompoment extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            mobileOpen: false,
-        };
-        this.UploaderRef = React.createRef();
-    }
-
-    UNSAFE_componentWillMount() {
-        this.unlisten = this.props.history.listen(() => {
-            this.setState(() => ({ mobileOpen: false }));
-        });
-    }
-    componentWillUnmount() {
-        this.unlisten();
-    }
-
-    componentDidMount() {
-        changeThemeColor(
-            this.props.selected.length <= 1 &&
-                !(!this.props.isMultiple && this.props.withFile)
-                ? this.props.theme.palette.primary.main
-                : this.props.theme.palette.background.default
-        );
-    }
-
-    UNSAFE_componentWillReceiveProps = (nextProps) => {
-        if (
-            (this.props.selected.length <= 1 &&
-                !(!this.props.isMultiple && this.props.withFile)) !==
-            (nextProps.selected.length <= 1 &&
-                !(!nextProps.isMultiple && nextProps.withFile))
-        ) {
-            changeThemeColor(
-                !(
-                    this.props.selected.length <= 1 &&
-                    !(!this.props.isMultiple && this.props.withFile)
-                )
-                    ? this.props.theme.palette.type === "dark"
-                        ? this.props.theme.palette.background.default
-                        : this.props.theme.palette.primary.main
-                    : this.props.theme.palette.background.default
-            );
+            minHeight: "calc(var(--vh, 100vh) - 360px)"
         }
-    };
+    }
+});
 
-    handleDrawerToggle = () => {
-        this.setState((state) => ({ mobileOpen: !state.mobileOpen }));
-    };
+function NavbarComponent(props) {
+    const history = useHistory();
+    const location = useLocation();
+    const { t } = useTranslation();
+    const [state, setState] = useState({
+        mobileOpen: false
+    });
 
-    loadUploader = () => {
-        if (pathHelper.isHomePage(this.props.location.pathname)) {
+    useEffect(() => {
+        const unlisten = history.listen(() => {
+            setState({ mobileOpen: false });
+        });
+
+        return function cleanup() {
+            unlisten();
+        };
+    }, []);
+
+    useEffect(() => {
+        changeThemeColor(
+            props.selected.length <= 1 &&
+            !(!props.isMultiple && props.withFile)
+                ? props.theme.palette.primary.main
+                : props.theme.palette.background.default
+        );
+    }, []);
+
+    useEffect(() => {
+        changeThemeColor(
+            !(
+                props.selected.length <= 1 &&
+                !(!props.isMultiple && props.withFile)
+            )
+                ? props.theme.palette.type === "dark"
+                    ? props.theme.palette.background.default
+                    : props.theme.palette.primary.main
+                : props.theme.palette.background.default
+        );
+    }, [props.selected.length, props.isMultiple, props.withFile]);
+
+    function handleDrawerToggle() {
+        setState((state) => ({ mobileOpen: !state.mobileOpen }));
+    }
+
+    function loadUploader() {
+        if (pathHelper.isHomePage(location.pathname)) {
             return (
                 <>
-                    {this.props.loadUploader && this.props.isLogin && (
+                    {props.loadUploader && props.isLogin && (
                         <Uploader />
                     )}
                 </>
             );
         }
-    };
+    }
 
-    openDownload = () => {
+    function openDownload() {
         if (!allowSharePreview()) {
-            this.props.toggleSnackbar(
+            props.toggleSnackbar(
                 "top",
                 "right",
-                this.props.t('Users who are not logged in cannot preview'),
+                t("Users who are not logged in cannot preview"),
                 "warning"
             );
             return;
         }
-        this.props.openLoadingDialog(this.props.t('Get download address...'));
-    };
+        props.openLoadingDialog(t("Get download address..."));
+    }
 
-    archiveDownload = () => {
-        this.props.openLoadingDialog(this.props.t('Packing...'));
-    };
+    function archiveDownload() {
+        props.openLoadingDialog(t("Packing..."));
+    }
 
-    signOut = () => {
+    function signOut() {
         API.delete("/user/session/")
             .then(() => {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
-                    this.props.t('You have logged out'),
+                    t("You have logged out"),
                     "success"
                 );
                 Auth.signout();
                 window.location.reload();
-                this.props.setSessionStatus(false);
+                props.setSessionStatus(false);
             })
             .catch((error) => {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
                     error.message,
@@ -384,571 +377,565 @@ class NavbarCompoment extends Component {
                 );
             })
             .finally(() => {
-                this.handleClose();
+                // handleClose();
             });
-    };
+    }
 
-    render() {
-        const { classes } = this.props;
-        const user = Auth.GetUser(this.props.isLogin);
-        const isHomePage = pathHelper.isHomePage(this.props.location.pathname);
-        const isSharePage = pathHelper.isSharePage(
-            this.props.location.pathname
-        );
+    const { classes } = props;
+    const user = Auth.GetUser(props.isLogin);
+    const isHomePage = pathHelper.isHomePage(location.pathname);
+    const isSharePage = pathHelper.isSharePage(
+        location.pathname
+    );
 
-        const drawer = (
-            <div id="container" className={classes.upDrawer}>
-                {pathHelper.isMobile() && <UserInfo />}
+    const drawer = (
+        <div id="container" className={classes.upDrawer}>
+            {pathHelper.isMobile() && <UserInfo />}
 
-                {Auth.Check(this.props.isLogin) && (
-                    <>
-                        <div className={classes.minStickDrawer}>
-                            <FileTag />
+            {Auth.Check(props.isLogin) && (
+                <>
+                    <div className={classes.minStickDrawer}>
+                        <FileTag />
+                        <List>
+                            <ListItem
+                                button
+                                key={t("My Share")}
+                                onClick={() =>
+                                    history.push("/shares?")
+                                }
+                            >
+                                <ListItemIcon>
+                                    <ShareIcon
+                                        className={classes.iconFix}
+                                    />
+                                </ListItemIcon>
+                                <ListItemText primary={t("My Share")} />
+                            </ListItem>
+                            <ListItem
+                                button
+                                key={t("Offline download")}
+                                onClick={() =>
+                                    history.push("/aria2?")
+                                }
+                            >
+                                <ListItemIcon>
+                                    <DownloadIcon
+                                        className={classes.iconFix}
+                                    />
+                                </ListItemIcon>
+                                <ListItemText primary={t("Offline download")} />
+                            </ListItem>
+                            {user.group.webdav && (
+                                <ListItem
+                                    button
+                                    key="WebDAV"
+                                    onClick={() =>
+                                        history.push("/webdav?")
+                                    }
+                                >
+                                    <ListItemIcon>
+                                        <Devices
+                                            className={classes.iconFix}
+                                        />
+                                    </ListItemIcon>
+                                    <ListItemText primary="WebDAV" />
+                                </ListItem>
+                            )}
+
+                            <ListItem
+                                button
+                                key={t("Task Queue")}
+                                onClick={() =>
+                                    history.push("/tasks?")
+                                }
+                            >
+                                <ListItemIcon>
+                                    <Assignment
+                                        className={classes.iconFix}
+                                    />
+                                </ListItemIcon>
+                                <ListItemText primary={t("Task Queue")} />
+                            </ListItem>
+                        </List>
+                    </div>
+
+                    {pathHelper.isMobile() && (
+                        <>
+                            <Divider />
                             <List>
                                 <ListItem
                                     button
-                                    key={this.props.t('My Share')}
+                                    key={t("Personal settings")}
                                     onClick={() =>
-                                        this.props.history.push("/shares?")
+                                        history.push("/setting?")
                                     }
                                 >
                                     <ListItemIcon>
-                                        <ShareIcon
+                                        <Settings
                                             className={classes.iconFix}
                                         />
                                     </ListItemIcon>
-                                    <ListItemText primary={this.props.t('My Share')} />
+                                    <ListItemText primary={t("Personal settings")} />
                                 </ListItem>
-                                <ListItem
-                                    button
-                                    key={this.props.t('Offline download')}
-                                    onClick={() =>
-                                        this.props.history.push("/aria2?")
-                                    }
-                                >
-                                    <ListItemIcon>
-                                        <DownloadIcon
-                                            className={classes.iconFix}
-                                        />
-                                    </ListItemIcon>
-                                    <ListItemText primary={this.props.t('Offline download')} />
-                                </ListItem>
-                                {user.group.webdav && (
-                                    <ListItem
-                                        button
-                                        key="WebDAV"
-                                        onClick={() =>
-                                            this.props.history.push("/webdav?")
-                                        }
-                                    >
-                                        <ListItemIcon>
-                                            <Devices
-                                                className={classes.iconFix}
-                                            />
-                                        </ListItemIcon>
-                                        <ListItemText primary="WebDAV" />
-                                    </ListItem>
-                                )}
 
                                 <ListItem
                                     button
-                                    key={this.props.t('Task Queue')}
-                                    onClick={() =>
-                                        this.props.history.push("/tasks?")
-                                    }
+                                    key={t("Sign out")}
+                                    onClick={signOut}
                                 >
                                     <ListItemIcon>
-                                        <Assignment
+                                        <LogoutVariant
                                             className={classes.iconFix}
                                         />
                                     </ListItemIcon>
-                                    <ListItemText primary={this.props.t('Task Queue')} />
+                                    <ListItemText primary={t("Sign out")} />
                                 </ListItem>
                             </List>
-                        </div>
+                        </>
+                    )}
+                    <div>
+                        <StorageBar />
+                    </div>
+                </>
+            )}
 
-                        {pathHelper.isMobile() && (
-                            <>
-                                <Divider />
-                                <List>
-                                    <ListItem
-                                        button
-                                        key={this.props.t('Personal settings')}
+            {!Auth.Check(props.isLogin) && (
+                <div>
+                    <ListItem
+                        button
+                        key={t("Log in")}
+                        onClick={() => history.push("/login")}
+                    >
+                        <ListItemIcon>
+                            <AccountArrowRight
+                                className={classes.iconFix}
+                            />
+                        </ListItemIcon>
+                        <ListItemText primary={t("Log in")} />
+                    </ListItem>
+                    <ListItem
+                        button
+                        key={t("Register")}
+                        onClick={() => history.push("/signup")}
+                    >
+                        <ListItemIcon>
+                            <AccountPlus className={classes.iconFix} />
+                        </ListItemIcon>
+                        <ListItemText primary={t("Register")} />
+                    </ListItem>
+                </div>
+            )}
+        </div>
+    );
+    const iOS =
+        process.browser && /iPad|iPhone|iPod/.test(navigator.userAgent);
+    return (
+        <div>
+            <AppBar
+                position="fixed"
+                className={classes.appBar}
+                color={
+                    props.theme.palette.type !== "dark" &&
+                    props.selected.length <= 1 &&
+                    !(!props.isMultiple && props.withFile)
+                        ? "primary"
+                        : "default"
+                }
+            >
+                <Toolbar>
+                    {props.selected.length <= 1 &&
+                        !(
+                            !props.isMultiple && props.withFile
+                        ) && (
+                            <IconButton
+                                color="inherit"
+                                aria-label="Open drawer"
+                                onClick={handleDrawerToggle}
+                                className={classes.menuButton}
+                            >
+                                <MenuIcon />
+                            </IconButton>
+                        )}
+                    {props.selected.length <= 1 &&
+                        !(
+                            !props.isMultiple && props.withFile
+                        ) && (
+                            <IconButton
+                                color="inherit"
+                                aria-label="Open drawer"
+                                onClick={() =>
+                                    props.handleDesktopToggle(
+                                        !props.desktopOpen
+                                    )
+                                }
+                                className={classes.menuButtonDesktop}
+                            >
+                                <MenuIcon />
+                            </IconButton>
+                        )}
+                    {(props.selected.length > 1 ||
+                            (!props.isMultiple && props.withFile)) &&
+                        (isHomePage ||
+                            pathHelper.isSharePage(
+                                location.pathname
+                            )) && (
+                            <Grow
+                                in={
+                                    props.selected.length > 1 ||
+                                    (!props.isMultiple &&
+                                        props.withFile)
+                                }
+                            >
+                                <IconButton
+                                    color="inherit"
+                                    className={classes.menuIcon}
+                                    onClick={() =>
+                                        props.setSelectedTarget([])
+                                    }
+                                >
+                                    <BackIcon />
+                                </IconButton>
+                            </Grow>
+                        )}
+                    {props.selected.length <= 1 &&
+                        !(
+                            !props.isMultiple && props.withFile
+                        ) && (
+                            <Typography
+                                variant="h6"
+                                color="inherit"
+                                noWrap
+                                onClick={() => {
+                                    history.push("/");
+                                }}
+                            >
+                                {props.subTitle
+                                    ? props.subTitle
+                                    : props.title}
+                            </Typography>
+                        )}
+
+                    {!props.isMultiple &&
+                        props.withFile &&
+                        !pathHelper.isMobile() && (
+                            <Typography variant="h6" color="inherit" noWrap>
+                                {props.selected[0].name}{" "}
+                                {(isHomePage ||
+                                        pathHelper.isSharePage(
+                                            location.pathname
+                                        )) &&
+                                    "(" +
+                                    sizeToString(
+                                        props.selected[0].size
+                                    ) +
+                                    ")"}
+                            </Typography>
+                        )}
+
+                    {props.selected.length > 1 &&
+                        !pathHelper.isMobile() && (
+                            (<Typography variant="h6" color="inherit" noWrap>
+                                {props.selected.length}{t("Objects")}
+                            </Typography>)
+                        )}
+                    {props.selected.length <= 1 &&
+                        !(
+                            !props.isMultiple && props.withFile
+                        ) && <SezrchBar />}
+                    <div className={classes.grow} />
+                    {(props.selected.length > 1 ||
+                            (!props.isMultiple && props.withFile)) &&
+                        !isHomePage &&
+                        !pathHelper.isSharePage(
+                            location.pathname
+                        ) &&
+                        Auth.Check(props.isLogin) &&
+                        !checkGetParameters("share") && (
+                            <div className={classes.sectionForFile}>
+                                <Tooltip title={t("save")}>
+                                    <IconButton
+                                        color="inherit"
                                         onClick={() =>
-                                            this.props.history.push("/setting?")
+                                            props.saveFile()
                                         }
                                     >
-                                        <ListItemIcon>
-                                            <Settings
-                                                className={classes.iconFix}
-                                            />
-                                        </ListItemIcon>
-                                        <ListItemText primary={this.props.t('Personal settings')} />
-                                    </ListItem>
-
-                                    <ListItem
-                                        button
-                                        key={this.props.t('Sign out')}
-                                        onClick={this.signOut}
-                                    >
-                                        <ListItemIcon>
-                                            <LogoutVariant
-                                                className={classes.iconFix}
-                                            />
-                                        </ListItemIcon>
-                                        <ListItemText primary={this.props.t('Sign out')} />
-                                    </ListItem>
-                                </List>
-                            </>
+                                        <SaveIcon />
+                                    </IconButton>
+                                </Tooltip>
+                            </div>
                         )}
-                        <div>
-                            <StorageBar></StorageBar>
-                        </div>
-                    </>
-                )}
+                    {(props.selected.length > 1 ||
+                            (!props.isMultiple && props.withFile)) &&
+                        (isHomePage || isSharePage) && (
+                            <div className={classes.sectionForFile}>
+                                {!props.isMultiple &&
+                                    props.withFile &&
+                                    isPreviewable(
+                                        props.selected[0].name
+                                    ) && (
+                                        <Grow
+                                            in={
+                                                !props.isMultiple &&
+                                                props.withFile &&
+                                                isPreviewable(
+                                                    props.selected[0]
+                                                        .name
+                                                )
+                                            }
+                                        >
+                                            <Tooltip title={t("Open")}>
+                                                <IconButton
+                                                    color="inherit"
+                                                    onClick={() =>
+                                                        props.openPreview()
+                                                    }
+                                                >
+                                                    <OpenIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Grow>
+                                    )}
+                                {!props.isMultiple &&
+                                    props.withFile && (
+                                        <Grow
+                                            in={
+                                                !props.isMultiple &&
+                                                props.withFile
+                                            }
+                                        >
+                                            <Tooltip title={t("download")}>
+                                                <IconButton
+                                                    color="inherit"
+                                                    onClick={() =>
+                                                        openDownload()
+                                                    }
+                                                >
+                                                    <DownloadIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Grow>
+                                    )}
+                                {(props.isMultiple ||
+                                        props.withFolder) &&
+                                    user.group.allowArchiveDownload && (
+                                        <Grow
+                                            in={
+                                                (props.isMultiple ||
+                                                    props
+                                                        .withFolder) &&
+                                                user.group
+                                                    .allowArchiveDownload
+                                            }
+                                        >
+                                            <Tooltip title={t("Download package")}>
+                                                <IconButton
+                                                    color="inherit"
+                                                    onClick={() =>
+                                                        archiveDownload()
+                                                    }
+                                                >
+                                                    <DownloadIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Grow>
+                                    )}
 
-                {!Auth.Check(this.props.isLogin) && (
-                    <div>
-                        <ListItem
-                            button
-                            key={this.props.t('Log in')}
-                            onClick={() => this.props.history.push("/login")}
-                        >
-                            <ListItemIcon>
-                                <AccountArrowRight
-                                    className={classes.iconFix}
-                                />
-                            </ListItemIcon>
-                            <ListItemText primary={this.props.t('Log in')} />
-                        </ListItem>
-                        <ListItem
-                            button
-                            key={this.props.t('Register')}
-                            onClick={() => this.props.history.push("/signup")}
-                        >
-                            <ListItemIcon>
-                                <AccountPlus className={classes.iconFix} />
-                            </ListItemIcon>
-                            <ListItemText primary={this.props.t('Register')} />
-                        </ListItem>
-                    </div>
-                )}
-            </div>
-        );
-        const iOS =
-            process.browser && /iPad|iPhone|iPod/.test(navigator.userAgent);
-        return (
-          <div>
-              <AppBar
-                  position="fixed"
-                  className={classes.appBar}
-                  color={
-                      this.props.theme.palette.type !== "dark" &&
-                      this.props.selected.length <= 1 &&
-                      !(!this.props.isMultiple && this.props.withFile)
-                          ? "primary"
-                          : "default"
-                  }
-              >
-                  <Toolbar>
-                      {this.props.selected.length <= 1 &&
-                          !(
-                              !this.props.isMultiple && this.props.withFile
-                          ) && (
-                              <IconButton
-                                  color="inherit"
-                                  aria-label="Open drawer"
-                                  onClick={this.handleDrawerToggle}
-                                  className={classes.menuButton}
-                              >
-                                  <MenuIcon />
-                              </IconButton>
-                          )}
-                      {this.props.selected.length <= 1 &&
-                          !(
-                              !this.props.isMultiple && this.props.withFile
-                          ) && (
-                              <IconButton
-                                  color="inherit"
-                                  aria-label="Open drawer"
-                                  onClick={() =>
-                                      this.props.handleDesktopToggle(
-                                          !this.props.desktopOpen
-                                      )
-                                  }
-                                  className={classes.menuButtonDesktop}
-                              >
-                                  <MenuIcon />
-                              </IconButton>
-                          )}
-                      {(this.props.selected.length > 1 ||
-                          (!this.props.isMultiple && this.props.withFile)) &&
-                          (isHomePage ||
-                              pathHelper.isSharePage(
-                                  this.props.location.pathname
-                              )) && (
-                              <Grow
-                                  in={
-                                      this.props.selected.length > 1 ||
-                                      (!this.props.isMultiple &&
-                                          this.props.withFile)
-                                  }
-                              >
-                                  <IconButton
-                                      color="inherit"
-                                      className={classes.menuIcon}
-                                      onClick={() =>
-                                          this.props.setSelectedTarget([])
-                                      }
-                                  >
-                                      <BackIcon />
-                                  </IconButton>
-                              </Grow>
-                          )}
-                      {this.props.selected.length <= 1 &&
-                          !(
-                              !this.props.isMultiple && this.props.withFile
-                          ) && (
-                              <Typography
-                                  variant="h6"
-                                  color="inherit"
-                                  noWrap
-                                  onClick={() => {
-                                      this.props.history.push("/");
-                                  }}
-                              >
-                                  {this.props.subTitle
-                                      ? this.props.subTitle
-                                      : this.props.title}
-                              </Typography>
-                          )}
+                                {!props.isMultiple &&
+                                    props.withFolder && (
+                                        <Grow
+                                            in={
+                                                !props.isMultiple &&
+                                                props.withFolder
+                                            }
+                                        >
+                                            <Tooltip title={t("Enter directory")}>
+                                                <IconButton
+                                                    color="inherit"
+                                                    onClick={() =>
+                                                        props.navigateTo(
+                                                            props
+                                                                .path ===
+                                                            "/"
+                                                                ? props
+                                                                    .path +
+                                                                this
+                                                                    .props
+                                                                    .selected[0]
+                                                                    .name
+                                                                : props
+                                                                    .path +
+                                                                "/" +
+                                                                this
+                                                                    .props
+                                                                    .selected[0]
+                                                                    .name
+                                                        )
+                                                    }
+                                                >
+                                                    <OpenFolderIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Grow>
+                                    )}
+                                {!props.isMultiple &&
+                                    !pathHelper.isMobile() &&
+                                    !isSharePage && (
+                                        <Grow in={!props.isMultiple}>
+                                            <Tooltip title={t("share")}>
+                                                <IconButton
+                                                    color="inherit"
+                                                    onClick={() =>
+                                                        props.openShareDialog()
+                                                    }
+                                                >
+                                                    <ShareIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Grow>
+                                    )}
+                                {!props.isMultiple && !isSharePage && (
+                                    <Grow in={!props.isMultiple}>
+                                        <Tooltip title={t("Rename")}>
+                                            <IconButton
+                                                color="inherit"
+                                                onClick={() =>
+                                                    props.openRenameDialog()
+                                                }
+                                            >
+                                                <RenameIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Grow>
+                                )}
+                                {!isSharePage && (
+                                    <div style={{ display: "flex" }}>
+                                        {!pathHelper.isMobile() && (
+                                            <Grow
+                                                in={
+                                                    props.selected
+                                                        .length !== 0 &&
+                                                    !pathHelper.isMobile()
+                                                }
+                                            >
+                                                <Tooltip title={t("move")}>
+                                                    <IconButton
+                                                        color="inherit"
+                                                        onClick={() =>
+                                                            props.openMoveDialog()
+                                                        }
+                                                    >
+                                                        <MoveIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Grow>
+                                        )}
 
-                      {!this.props.isMultiple &&
-                          this.props.withFile &&
-                          !pathHelper.isMobile() && (
-                              <Typography variant="h6" color="inherit" noWrap>
-                                  {this.props.selected[0].name}{" "}
-                                  {(isHomePage ||
-                                      pathHelper.isSharePage(
-                                          this.props.location.pathname
-                                      )) &&
-                                      "(" +
-                                          sizeToString(
-                                              this.props.selected[0].size
-                                          ) +
-                                          ")"}
-                              </Typography>
-                          )}
+                                        <Grow
+                                            in={
+                                                props.selected
+                                                    .length !== 0
+                                            }
+                                        >
+                                            <Tooltip title={t("delete")}>
+                                                <IconButton
+                                                    color="inherit"
+                                                    onClick={() =>
+                                                        props.openRemoveDialog()
+                                                    }
+                                                >
+                                                    <DeleteIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Grow>
 
-                      {this.props.selected.length > 1 &&
-                          !pathHelper.isMobile() && (
-                              (<Typography variant="h6" color="inherit" noWrap>
-                                {this.props.selected.length}{this.props.t('Objects')}
-                              </Typography>)
-                          )}
-                      {this.props.selected.length <= 1 &&
-                          !(
-                              !this.props.isMultiple && this.props.withFile
-                          ) && <SezrchBar />}
-                      <div className={classes.grow} />
-                      {(this.props.selected.length > 1 ||
-                          (!this.props.isMultiple && this.props.withFile)) &&
-                          !isHomePage &&
-                          !pathHelper.isSharePage(
-                              this.props.location.pathname
-                          ) &&
-                          Auth.Check(this.props.isLogin) &&
-                          !checkGetParameters("share") && (
-                              <div className={classes.sectionForFile}>
-                                  <Tooltip title={this.props.t('save')}>
-                                      <IconButton
-                                          color="inherit"
-                                          onClick={() =>
-                                              this.props.saveFile()
-                                          }
-                                      >
-                                          <SaveIcon />
-                                      </IconButton>
-                                  </Tooltip>
-                              </div>
-                          )}
-                      {(this.props.selected.length > 1 ||
-                          (!this.props.isMultiple && this.props.withFile)) &&
-                          (isHomePage || isSharePage) && (
-                              <div className={classes.sectionForFile}>
-                                  {!this.props.isMultiple &&
-                                      this.props.withFile &&
-                                      isPreviewable(
-                                          this.props.selected[0].name
-                                      ) && (
-                                          <Grow
-                                              in={
-                                                  !this.props.isMultiple &&
-                                                  this.props.withFile &&
-                                                  isPreviewable(
-                                                      this.props.selected[0]
-                                                          .name
-                                                  )
-                                              }
-                                          >
-                                              <Tooltip title={this.props.t('Open')}>
-                                                  <IconButton
-                                                      color="inherit"
-                                                      onClick={() =>
-                                                          this.props.openPreview()
-                                                      }
-                                                  >
-                                                      <OpenIcon />
-                                                  </IconButton>
-                                              </Tooltip>
-                                          </Grow>
-                                      )}
-                                  {!this.props.isMultiple &&
-                                      this.props.withFile && (
-                                          <Grow
-                                              in={
-                                                  !this.props.isMultiple &&
-                                                  this.props.withFile
-                                              }
-                                          >
-                                              <Tooltip title={this.props.t('download')}>
-                                                  <IconButton
-                                                      color="inherit"
-                                                      onClick={() =>
-                                                          this.openDownload()
-                                                      }
-                                                  >
-                                                      <DownloadIcon />
-                                                  </IconButton>
-                                              </Tooltip>
-                                          </Grow>
-                                      )}
-                                  {(this.props.isMultiple ||
-                                      this.props.withFolder) &&
-                                      user.group.allowArchiveDownload && (
-                                          <Grow
-                                              in={
-                                                  (this.props.isMultiple ||
-                                                      this.props
-                                                          .withFolder) &&
-                                                  user.group
-                                                      .allowArchiveDownload
-                                              }
-                                          >
-                                              <Tooltip title={this.props.t('Download package')}>
-                                                  <IconButton
-                                                      color="inherit"
-                                                      onClick={() =>
-                                                          this.archiveDownload()
-                                                      }
-                                                  >
-                                                      <DownloadIcon />
-                                                  </IconButton>
-                                              </Tooltip>
-                                          </Grow>
-                                      )}
+                                        {pathHelper.isMobile() && (
+                                            <Grow
+                                                in={
+                                                    props.selected
+                                                        .length !== 0 &&
+                                                    pathHelper.isMobile()
+                                                }
+                                            >
+                                                <Tooltip title={t("More operations")}>
+                                                    <IconButton
+                                                        color="inherit"
+                                                        onClick={() =>
+                                                            props.changeContextMenu(
+                                                                "file",
+                                                                true
+                                                            )
+                                                        }
+                                                    >
+                                                        <MoreHoriz />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Grow>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    {props.selected.length <= 1 &&
+                        !(
+                            !props.isMultiple && props.withFile
+                        ) && <UserAvatar />}
+                    {props.selected.length <= 1 &&
+                        !(
+                            !props.isMultiple && props.withFile
+                        ) && <LanguageSwitcher position="top" />}
+                    {props.selected.length <= 1 &&
+                        !(!props.isMultiple && props.withFile) &&
+                        isHomePage &&
+                        pathHelper.isMobile() && <SubActions inherit />}
+                </Toolbar>
+            </AppBar>
+            {loadUploader()}
 
-                                  {!this.props.isMultiple &&
-                                      this.props.withFolder && (
-                                          <Grow
-                                              in={
-                                                  !this.props.isMultiple &&
-                                                  this.props.withFolder
-                                              }
-                                          >
-                                              <Tooltip title={this.props.t('Enter directory')}>
-                                                  <IconButton
-                                                      color="inherit"
-                                                      onClick={() =>
-                                                          this.props.navigateTo(
-                                                              this.props
-                                                                  .path ===
-                                                                  "/"
-                                                                  ? this.props
-                                                                        .path +
-                                                                        this
-                                                                            .props
-                                                                            .selected[0]
-                                                                            .name
-                                                                  : this.props
-                                                                        .path +
-                                                                        "/" +
-                                                                        this
-                                                                            .props
-                                                                            .selected[0]
-                                                                            .name
-                                                          )
-                                                      }
-                                                  >
-                                                      <OpenFolderIcon />
-                                                  </IconButton>
-                                              </Tooltip>
-                                          </Grow>
-                                      )}
-                                  {!this.props.isMultiple &&
-                                      !pathHelper.isMobile() &&
-                                      !isSharePage && (
-                                          <Grow in={!this.props.isMultiple}>
-                                              <Tooltip title={this.props.t('share')}>
-                                                  <IconButton
-                                                      color="inherit"
-                                                      onClick={() =>
-                                                          this.props.openShareDialog()
-                                                      }
-                                                  >
-                                                      <ShareIcon />
-                                                  </IconButton>
-                                              </Tooltip>
-                                          </Grow>
-                                      )}
-                                  {!this.props.isMultiple && !isSharePage && (
-                                      <Grow in={!this.props.isMultiple}>
-                                          <Tooltip title={this.props.t('Rename')}>
-                                              <IconButton
-                                                  color="inherit"
-                                                  onClick={() =>
-                                                      this.props.openRenameDialog()
-                                                  }
-                                              >
-                                                  <RenameIcon />
-                                              </IconButton>
-                                          </Tooltip>
-                                      </Grow>
-                                  )}
-                                  {!isSharePage && (
-                                      <div style={{ display: "flex" }}>
-                                          {!pathHelper.isMobile() && (
-                                              <Grow
-                                                  in={
-                                                      this.props.selected
-                                                          .length !== 0 &&
-                                                      !pathHelper.isMobile()
-                                                  }
-                                              >
-                                                  <Tooltip title={this.props.t('move')}>
-                                                      <IconButton
-                                                          color="inherit"
-                                                          onClick={() =>
-                                                              this.props.openMoveDialog()
-                                                          }
-                                                      >
-                                                          <MoveIcon />
-                                                      </IconButton>
-                                                  </Tooltip>
-                                              </Grow>
-                                          )}
-
-                                          <Grow
-                                              in={
-                                                  this.props.selected
-                                                      .length !== 0
-                                              }
-                                          >
-                                              <Tooltip title={this.props.t('delete')}>
-                                                  <IconButton
-                                                      color="inherit"
-                                                      onClick={() =>
-                                                          this.props.openRemoveDialog()
-                                                      }
-                                                  >
-                                                      <DeleteIcon />
-                                                  </IconButton>
-                                              </Tooltip>
-                                          </Grow>
-
-                                          {pathHelper.isMobile() && (
-                                              <Grow
-                                                  in={
-                                                      this.props.selected
-                                                          .length !== 0 &&
-                                                      pathHelper.isMobile()
-                                                  }
-                                              >
-                                                  <Tooltip title={this.props.t('More operations')}>
-                                                      <IconButton
-                                                          color="inherit"
-                                                          onClick={() =>
-                                                              this.props.changeContextMenu(
-                                                                  "file",
-                                                                  true
-                                                              )
-                                                          }
-                                                      >
-                                                          <MoreHoriz />
-                                                      </IconButton>
-                                                  </Tooltip>
-                                              </Grow>
-                                          )}
-                                      </div>
-                                  )}
-                              </div>
-                          )}
-                      {this.props.selected.length <= 1 &&
-                          !(
-                              !this.props.isMultiple && this.props.withFile
-                          ) && <UserAvatar />}
-                      {this.props.selected.length <= 1 &&
-                          !(
-                              !this.props.isMultiple && this.props.withFile
-                          ) && <LanguageSwitcher position="top" />}
-                      {this.props.selected.length <= 1 &&
-                          !(!this.props.isMultiple && this.props.withFile) &&
-                          isHomePage &&
-                          pathHelper.isMobile() && <SubActions inherit />}
-                  </Toolbar>
-              </AppBar>
-              {this.loadUploader()}
-
-              <Hidden smUp implementation="css">
-                  <SwipeableDrawer
-                      container={this.props.container}
-                      variant="temporary"
-                      classes={{
-                          paper: classes.drawerPaper,
-                      }}
-                      anchor="left"
-                      open={this.state.mobileOpen}
-                      onClose={this.handleDrawerToggle}
-                      onOpen={() =>
-                          this.setState(() => ({ mobileOpen: true }))
-                      }
-                      disableDiscovery={iOS}
-                      ModalProps={{
-                          keepMounted: true, // Better open performance on mobile.
-                      }}
-                  >
-                      {drawer}
-                  </SwipeableDrawer>
-              </Hidden>
-              <Hidden xsDown implementation="css">
-                  <Drawer
-                      classes={{
-                          paper: classes.drawerPaperDesktop,
-                      }}
-                      className={classNames(classes.drawer, {
-                          [classes.drawerOpen]: this.props.desktopOpen,
-                          [classes.drawerClose]: !this.props.desktopOpen,
-                      })}
-                      variant="persistent"
-                      anchor="left"
-                      open={this.props.desktopOpen}
-                  >
-                      <div className={classes.toolbar} />
-                      {drawer}
-                  </Drawer>
-              </Hidden>
-          </div>
-        );
-    }
+            <Hidden smUp implementation="css">
+                <SwipeableDrawer
+                    container={props.container}
+                    variant="temporary"
+                    classes={{
+                        paper: classes.drawerPaper
+                    }}
+                    anchor="left"
+                    open={state.mobileOpen}
+                    onClose={handleDrawerToggle}
+                    onOpen={() =>
+                        setState(() => ({ mobileOpen: true }))
+                    }
+                    disableDiscovery={iOS}
+                    ModalProps={{
+                        keepMounted: true // Better open performance on mobile.
+                    }}
+                >
+                    {drawer}
+                </SwipeableDrawer>
+            </Hidden>
+            <Hidden xsDown implementation="css">
+                <Drawer
+                    classes={{
+                        paper: classes.drawerPaperDesktop
+                    }}
+                    className={classNames(classes.drawer, {
+                        [classes.drawerOpen]: props.desktopOpen,
+                        [classes.drawerClose]: !props.desktopOpen
+                    })}
+                    variant="persistent"
+                    anchor="left"
+                    open={props.desktopOpen}
+                >
+                    <div className={classes.toolbar} />
+                    {drawer}
+                </Drawer>
+            </Hidden>
+        </div>
+    );
 }
-NavbarCompoment.propTypes = {
-    classes: PropTypes.object.isRequired,
-    theme: PropTypes.object.isRequired,
-};
 
 const Navbar = connect(
     mapStateToProps,
     mapDispatchToProps
-)(withTranslation()(withTheme(withStyles(styles)(withRouter(NavbarCompoment)))));
+)((withTheme(withStyles(styles)(NavbarComponent))));
 
 export default Navbar;

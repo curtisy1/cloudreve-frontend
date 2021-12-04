@@ -1,6 +1,5 @@
-import { withTranslation } from "react-i18next";
-import React, { Component } from "react";
-import PropTypes from "prop-types";
+import { useTranslation } from "react-i18next";
+import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import {
     closeAllModals,
@@ -8,7 +7,7 @@ import {
     setModalsLoading,
     refreshFileList,
     refreshStorage,
-    openLoadingDialog,
+    openLoadingDialog
 } from "../../actions/index";
 import PathSelector from "./PathSelector";
 import API, { baseURL } from "../../middleware/Api";
@@ -21,12 +20,12 @@ import {
     DialogContent,
     DialogTitle,
     DialogContentText,
-    CircularProgress,
+    CircularProgress
 } from "@material-ui/core";
 import Loading from "../Modals/Loading";
 import CopyDialog from "../Modals/Copy";
 import CreatShare from "../Modals/CreateShare";
-import { withRouter } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import pathHelper from "../../utils/page";
 import DecompressDialog from "../Modals/Decompress";
 import CompressDialog from "../Modals/Compress";
@@ -34,7 +33,7 @@ import CompressDialog from "../Modals/Compress";
 const styles = (theme) => ({
     wrapper: {
         margin: theme.spacing(1),
-        position: "relative",
+        position: "relative"
     },
     buttonProgress: {
         color: theme.palette.secondary.light,
@@ -42,11 +41,11 @@ const styles = (theme) => ({
         top: "50%",
         left: "50%",
         marginTop: -12,
-        marginLeft: -12,
+        marginLeft: -12
     },
     contentFix: {
-        padding: "10px 24px 0px 24px",
-    },
+        padding: "10px 24px 0px 24px"
+    }
 });
 
 const mapStateToProps = (state) => {
@@ -61,7 +60,7 @@ const mapStateToProps = (state) => {
         dndTarget: state.explorer.dndTarget,
         dndSource: state.explorer.dndSource,
         loading: state.viewUpdate.modals.loading,
-        loadingText: state.viewUpdate.modals.loadingText,
+        loadingText: state.viewUpdate.modals.loadingText
     };
 };
 
@@ -84,12 +83,14 @@ const mapDispatchToProps = (dispatch) => {
         },
         openLoadingDialog: (text) => {
             dispatch(openLoadingDialog(text));
-        },
+        }
     };
 };
 
-class ModalsCompoment extends Component {
-    state = {
+function ModalsComponent(props) {
+    const { t } = useTranslation();
+    const location = useLocation();
+    const [state, setState] = useState({
         newFolderName: "",
         newFileName: "",
         newName: "",
@@ -101,70 +102,40 @@ class ModalsCompoment extends Component {
         downloadURL: "",
         remoteDownloadPathSelect: false,
         source: "",
-        purchaseCallback: null,
-    };
+        purchaseCallback: null
+    });
 
-    handleInputChange = (e) => {
-        this.setState({
-            [e.target.id]: e.target.value,
+    function handleInputChange(e) {
+        setState({
+            ...state,
+            [e.target.id]: e.target.value
         });
-    };
+    }
 
-    newNameSuffix = "";
-    downloaded = false;
+    let DragSelectedPath = "";
 
-    UNSAFE_componentWillReceiveProps = (nextProps) => {
-        if (this.props.dndSignale !== nextProps.dndSignale) {
-            this.dragMove(nextProps.dndSource, nextProps.dndTarget);
-            return;
-        }
-        if (this.props.loading !== nextProps.loading) {
-            // 打包下载
-            if (nextProps.loading === true) {
-                if (nextProps.loadingText === this.props.t('Packing...')) {
-                    if (
-                        pathHelper.isSharePage(this.props.location.pathname) &&
-                        this.props.share &&
-                        this.props.share.score > 0
-                    ) {
-                        this.scoreHandler(this.archiveDownload);
-                        return;
-                    }
-                    this.archiveDownload();
-                } else if (nextProps.loadingText === this.props.t('Get download address...')) {
-                    if (
-                        pathHelper.isSharePage(this.props.location.pathname) &&
-                        this.props.share &&
-                        this.props.share.score > 0
-                    ) {
-                        this.scoreHandler(this.Download);
-                        return;
-                    }
-                    this.Download();
-                }
-            }
-            return;
-        }
-        if (this.props.modalsStatus.rename !== nextProps.modalsStatus.rename) {
-            const name = nextProps.selected[0].name;
-            this.setState({
-                newName: name,
-            });
-            return;
-        }
+    useEffect(() => {
+        const name = props.selected[0].name;
+        setState({
+            ...state,
+            newName: name
+        });
+    }, [props.modalsStatus.rename]);
+
+    useEffect(() => {
+
         if (
-            this.props.modalsStatus.getSource !==
-                nextProps.modalsStatus.getSource &&
-            nextProps.modalsStatus.getSource === true
+            props.modalsStatus.getSource
         ) {
-            API.get("/file/source/" + this.props.selected[0].id)
+            API.get("/file/source/" + props.selected[0].id)
                 .then((response) => {
-                    this.setState({
-                        source: response.data.url,
+                    setState({
+                        ...state,
+                        source: response.data.url
                     });
                 })
                 .catch((error) => {
-                    this.props.toggleSnackbar(
+                    props.toggleSnackbar(
                         "top",
                         "right",
                         error.message,
@@ -172,51 +143,68 @@ class ModalsCompoment extends Component {
                     );
                 });
         }
-    };
+    }, [props.modalsStatus.getSource]);
 
-    scoreHandler = (callback) => {
+    function scoreHandler(callback) {
         callback();
-    };
+    }
 
-    Download = () => {
-        let reqURL = "";
-        if (this.props.selected[0].key) {
+    function onClose() {
+        setState({
+            ...state,
+            newFolderName: "",
+            newFileName: "",
+            newName: "",
+            selectedPath: "",
+            selectedPathName: "",
+            secretShare: false,
+            sharePwd: "",
+            downloadURL: "",
+            shareUrl: "",
+            remoteDownloadPathSelect: false,
+            source: ""
+        });
+        props.closeAllModals();
+    }
+
+    function Download() {
+        let reqURL;
+        if (props.selected[0].key) {
             const downloadPath =
-                this.props.selected[0].path === "/"
-                    ? this.props.selected[0].path + this.props.selected[0].name
-                    : this.props.selected[0].path +
-                      "/" +
-                      this.props.selected[0].name;
+                props.selected[0].path === "/"
+                    ? props.selected[0].path + props.selected[0].name
+                    : props.selected[0].path +
+                    "/" +
+                    props.selected[0].name;
             reqURL =
                 "/share/download/" +
-                this.props.selected[0].key +
+                props.selected[0].key +
                 "?path=" +
                 encodeURIComponent(downloadPath);
         } else {
-            reqURL = "/file/download/" + this.props.selected[0].id;
+            reqURL = "/file/download/" + props.selected[0].id;
         }
 
         API.put(reqURL)
             .then((response) => {
                 window.location.assign(response.data);
-                this.onClose();
-                this.downloaded = true;
+                onClose();
             })
             .catch((error) => {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
                     error.message,
                     "error"
                 );
-                this.onClose();
+                onClose();
             });
-    };
+    }
 
-    archiveDownload = () => {
+    function archiveDownload() {
         const dirs = [],
             items = [];
-        this.props.selected.map((value) => {
+        props.selected.map((value) => {
             if (value.type === "dir") {
                 dirs.push(value.id);
             } else {
@@ -228,47 +216,73 @@ class ModalsCompoment extends Component {
         let reqURL = "/file/archive";
         const postBody = {
             items: items,
-            dirs: dirs,
+            dirs: dirs
         };
-        if (pathHelper.isSharePage(this.props.location.pathname)) {
+        if (pathHelper.isSharePage(location.pathname)) {
             reqURL = "/share/archive/" + window.shareInfo.key;
-            postBody["path"] = this.props.selected[0].path;
+            postBody["path"] = props.selected[0].path;
         }
 
         API.post(reqURL, postBody)
             .then((response) => {
                 if (response.rawData.code === 0) {
-                    this.onClose();
+                    onClose();
                     window.location.assign(response.data);
                 } else {
-                    this.props.toggleSnackbar(
+                    props.toggleSnackbar(
                         "top",
                         "right",
                         response.rawData.msg,
                         "warning"
                     );
                 }
-                this.onClose();
-                this.props.refreshStorage();
+                onClose();
+                props.refreshStorage();
             })
             .catch((error) => {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
                     error.message,
                     "error"
                 );
-                this.onClose();
+                onClose();
             });
-    };
+    }
 
-    submitRemove = (e) => {
+    useEffect(() => {
+        if (props.loading === true) {
+            if (props.loadingText === t("Packing...")) {
+                if (
+                    pathHelper.isSharePage(location.pathname) &&
+                    props.share &&
+                    props.share.score > 0
+                ) {
+                    scoreHandler(archiveDownload);
+                    return;
+                }
+                archiveDownload();
+            } else if (props.loadingText === t("Get download address...")) {
+                if (
+                    pathHelper.isSharePage(location.pathname) &&
+                    props.share &&
+                    props.share.score > 0
+                ) {
+                    scoreHandler(Download);
+                    return;
+                }
+                Download();
+            }
+        }
+    }, [props.loading]);
+
+    function submitRemove(e) {
         e.preventDefault();
-        this.props.setModalsLoading(true);
+        props.setModalsLoading(true);
         const dirs = [],
             items = [];
         // eslint-disable-next-line
-        this.props.selected.map((value) => {
+        props.selected.map((value) => {
             if (value.type === "dir") {
                 dirs.push(value.id);
             } else {
@@ -278,44 +292,44 @@ class ModalsCompoment extends Component {
         API.delete("/object", {
             data: {
                 items: items,
-                dirs: dirs,
-            },
+                dirs: dirs
+            }
         })
             .then((response) => {
                 if (response.rawData.code === 0) {
-                    this.onClose();
-                    setTimeout(this.props.refreshFileList, 500);
+                    onClose();
+                    setTimeout(props.refreshFileList, 500);
                 } else {
-                    this.props.toggleSnackbar(
+                    props.toggleSnackbar(
                         "top",
                         "right",
                         response.rawData.msg,
                         "warning"
                     );
                 }
-                this.props.setModalsLoading(false);
-                this.props.refreshStorage();
+                props.setModalsLoading(false);
+                props.refreshStorage();
             })
             .catch((error) => {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
                     error.message,
                     "error"
                 );
-                this.props.setModalsLoading(false);
+                props.setModalsLoading(false);
             });
-    };
+    }
 
-    submitMove = (e) => {
+    function submitMove(e) {
         if (e != null) {
             e.preventDefault();
         }
-        this.props.setModalsLoading(true);
+        props.setModalsLoading(true);
         const dirs = [],
             items = [];
         // eslint-disable-next-line
-        this.props.selected.map((value) => {
+        props.selected.map((value) => {
             if (value.type === "dir") {
                 dirs.push(value.id);
             } else {
@@ -324,44 +338,44 @@ class ModalsCompoment extends Component {
         });
         API.patch("/object", {
             action: "move",
-            src_dir: this.props.selected[0].path,
+            src_dir: props.selected[0].path,
             src: {
                 dirs: dirs,
-                items: items,
+                items: items
             },
-            dst: this.DragSelectedPath
-                ? this.DragSelectedPath
-                : this.state.selectedPath === "//"
-                ? "/"
-                : this.state.selectedPath,
+            dst: DragSelectedPath
+                ? DragSelectedPath
+                : state.selectedPath === "//"
+                    ? "/"
+                    : state.selectedPath
         })
             .then(() => {
-                this.onClose();
-                this.props.refreshFileList();
-                this.props.setModalsLoading(false);
+                onClose();
+                props.refreshFileList();
+                props.setModalsLoading(false);
             })
             .catch((error) => {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
                     error.message,
                     "error"
                 );
-                this.props.setModalsLoading(false);
+                props.setModalsLoading(false);
             })
             .then(() => {
-                this.props.closeAllModals();
+                props.closeAllModals();
             });
-    };
+    }
 
-    dragMove = (source, target) => {
-        if (this.props.selected.length === 0) {
-            this.props.selected[0] = source;
+    function dragMove(source, target) {
+        if (props.selected.length === 0) {
+            props.selected[0] = source;
         }
         let doMove = true;
 
         // eslint-disable-next-line
-        this.props.selected.map((value) => {
+        props.selected.map((value) => {
             // 根据ID过滤
             if (value.id === target.id && value.type === target.type) {
                 doMove = false;
@@ -374,106 +388,108 @@ class ModalsCompoment extends Component {
                 target.path + (target.path === "/" ? "" : "/") + target.name
             ) {
                 doMove = false;
-                // eslint-disable-next-line
-                return;
             }
         });
         if (doMove) {
-            this.DragSelectedPath =
+            DragSelectedPath =
                 target.path === "/"
                     ? target.path + target.name
                     : target.path + "/" + target.name;
-            this.props.openLoadingDialog(this.props.t('Processing...'));
-            this.submitMove();
+            props.openLoadingDialog(t("Processing..."));
+            submitMove();
         }
-    };
+    }
 
-    submitRename = (e) => {
+    useEffect(() => {
+        dragMove(props.dndSource, props.dndTarget);
+    }, [props.dndSignale]);
+
+    function submitRename(e) {
         e.preventDefault();
-        this.props.setModalsLoading(true);
-        const newName = this.state.newName;
+        props.setModalsLoading(true);
+        const newName = state.newName;
 
         const src = {
             dirs: [],
-            items: [],
+            items: []
         };
 
-        if (this.props.selected[0].type === "dir") {
-            src.dirs[0] = this.props.selected[0].id;
+        if (props.selected[0].type === "dir") {
+            src.dirs[0] = props.selected[0].id;
         } else {
-            src.items[0] = this.props.selected[0].id;
+            src.items[0] = props.selected[0].id;
         }
 
         // 检查重名
         if (
-            this.props.dirList.findIndex((value) => {
+            props.dirList.findIndex((value) => {
                 return value.name === newName;
             }) !== -1 ||
-            this.props.fileList.findIndex((value) => {
+            props.fileList.findIndex((value) => {
                 return value.name === newName;
             }) !== -1
         ) {
-            this.props.toggleSnackbar(
+            props.toggleSnackbar(
                 "top",
                 "right",
-                this.props.t('The new name is the same as the existing file'),
+                t("The new name is the same as the existing file"),
                 "warning"
             );
-            this.props.setModalsLoading(false);
+            props.setModalsLoading(false);
         } else {
             API.post("/object/rename", {
                 action: "rename",
                 src: src,
-                new_name: newName,
+                new_name: newName
             })
                 .then(() => {
-                    this.onClose();
-                    this.props.refreshFileList();
-                    this.props.setModalsLoading(false);
+                    onClose();
+                    props.refreshFileList();
+                    props.setModalsLoading(false);
                 })
                 .catch((error) => {
-                    this.props.toggleSnackbar(
+                    props.toggleSnackbar(
                         "top",
                         "right",
                         error.message,
                         "error"
                     );
-                    this.props.setModalsLoading(false);
+                    props.setModalsLoading(false);
                 });
         }
-    };
+    }
 
-    submitCreateNewFolder = (e) => {
+    function submitCreateNewFolder(e) {
         e.preventDefault();
-        this.props.setModalsLoading(true);
+        props.setModalsLoading(true);
         if (
-            this.props.dirList.findIndex((value) => {
-                return value.name === this.state.newFolderName;
+            props.dirList.findIndex((value) => {
+                return value.name === state.newFolderName;
             }) !== -1
         ) {
-            this.props.toggleSnackbar(
+            props.toggleSnackbar(
                 "top",
                 "right",
-                this.props.t('Duplicate folder name'),
+                t("Duplicate folder name"),
                 "warning"
             );
-            this.props.setModalsLoading(false);
+            props.setModalsLoading(false);
         } else {
             API.put("/directory", {
                 path:
-                    (this.props.path === "/" ? "" : this.props.path) +
+                    (props.path === "/" ? "" : props.path) +
                     "/" +
-                    this.state.newFolderName,
+                    state.newFolderName
             })
                 .then(() => {
-                    this.onClose();
-                    this.props.refreshFileList();
-                    this.props.setModalsLoading(false);
+                    onClose();
+                    props.refreshFileList();
+                    props.setModalsLoading(false);
                 })
                 .catch((error) => {
-                    this.props.setModalsLoading(false);
+                    props.setModalsLoading(false);
 
-                    this.props.toggleSnackbar(
+                    props.toggleSnackbar(
                         "top",
                         "right",
                         error.message,
@@ -481,40 +497,40 @@ class ModalsCompoment extends Component {
                     );
                 });
         }
-        //this.props.toggleSnackbar();
-    };
+        //props.toggleSnackbar();
+    }
 
-    submitCreateNewFile = (e) => {
+    function submitCreateNewFile(e) {
         e.preventDefault();
-        this.props.setModalsLoading(true);
+        props.setModalsLoading(true);
         if (
-            this.props.dirList.findIndex((value) => {
-                return value.name === this.state.newFileName;
+            props.dirList.findIndex((value) => {
+                return value.name === state.newFileName;
             }) !== -1
         ) {
-            this.props.toggleSnackbar(
+            props.toggleSnackbar(
                 "top",
                 "right",
-                this.props.t('Duplicate file name'),
+                t("Duplicate file name"),
                 "warning"
             );
-            this.props.setModalsLoading(false);
+            props.setModalsLoading(false);
         } else {
             API.post("/file/create", {
                 path:
-                    (this.props.path === "/" ? "" : this.props.path) +
+                    (props.path === "/" ? "" : props.path) +
                     "/" +
-                    this.state.newFileName,
+                    state.newFileName
             })
                 .then(() => {
-                    this.onClose();
-                    this.props.refreshFileList();
-                    this.props.setModalsLoading(false);
+                    onClose();
+                    props.refreshFileList();
+                    props.setModalsLoading(false);
                 })
                 .catch((error) => {
-                    this.props.setModalsLoading(false);
+                    props.setModalsLoading(false);
 
-                    this.props.toggleSnackbar(
+                    props.toggleSnackbar(
                         "top",
                         "right",
                         error.message,
@@ -522,584 +538,558 @@ class ModalsCompoment extends Component {
                     );
                 });
         }
-        //this.props.toggleSnackbar();
-    };
+        //props.toggleSnackbar();
+    }
 
-    submitTorrentDownload = (e) => {
+    function submitTorrentDownload(e) {
         e.preventDefault();
-        this.props.setModalsLoading(true);
-        API.post("/aria2/torrent/" + this.props.selected[0].id, {
+        props.setModalsLoading(true);
+        API.post("/aria2/torrent/" + props.selected[0].id, {
             dst:
-                this.state.selectedPath === "//"
+                state.selectedPath === "//"
                     ? "/"
-                    : this.state.selectedPath,
+                    : state.selectedPath
         })
             .then(() => {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
-                    this.props.t('Task has been created'),
+                    t("Task has been created"),
                     "success"
                 );
-                this.onClose();
-                this.props.setModalsLoading(false);
+                onClose();
+                props.setModalsLoading(false);
             })
             .catch((error) => {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
                     error.message,
                     "error"
                 );
-                this.props.setModalsLoading(false);
+                props.setModalsLoading(false);
             });
-    };
+    }
 
-    submitDownload = (e) => {
+    function submitDownload(e) {
         e.preventDefault();
-        this.props.setModalsLoading(true);
+        props.setModalsLoading(true);
         API.post("/aria2/url", {
-            url: this.state.downloadURL,
+            url: state.downloadURL,
             dst:
-                this.state.selectedPath === "//"
+                state.selectedPath === "//"
                     ? "/"
-                    : this.state.selectedPath,
+                    : state.selectedPath
         })
             .then(() => {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
-                    this.props.t('Task has been created'),
+                    t("Task has been created"),
                     "success"
                 );
-                this.onClose();
-                this.props.setModalsLoading(false);
+                onClose();
+                props.setModalsLoading(false);
             })
             .catch((error) => {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
                     error.message,
                     "error"
                 );
-                this.props.setModalsLoading(false);
+                props.setModalsLoading(false);
             });
-    };
+    }
 
-    setMoveTarget = (folder) => {
+    function setMoveTarget(folder) {
         const path =
             folder.path === "/"
                 ? folder.path + folder.name
                 : folder.path + "/" + folder.name;
-        this.setState({
+        setState({
+            ...state,
             selectedPath: path,
-            selectedPathName: folder.name,
+            selectedPathName: folder.name
         });
-    };
+    }
 
-    remoteDownloadNext = () => {
-        this.props.closeAllModals();
-        this.setState({
-            remoteDownloadPathSelect: true,
+    function remoteDownloadNext() {
+        props.closeAllModals();
+        setState({
+            ...state,
+            remoteDownloadPathSelect: true
         });
-    };
+    }
 
-    onClose = () => {
-        this.setState({
-            newFolderName: "",
-            newFileName: "",
-            newName: "",
-            selectedPath: "",
-            selectedPathName: "",
-            secretShare: false,
-            sharePwd: "",
-            downloadURL: "",
-            shareUrl: "",
-            remoteDownloadPathSelect: false,
-            source: "",
-        });
-        this.newNameSuffix = "";
-        this.props.closeAllModals();
-    };
+    const { classes } = props;
 
-    handleChange = (name) => (event) => {
-        this.setState({ [name]: event.target.checked });
-    };
+    return (
+        <div>
+            <Loading />
+            <Dialog
+                open={props.modalsStatus.getSource}
+                onClose={onClose}
+                aria-labelledby="form-dialog-title"
+            >
+                <DialogTitle id="form-dialog-title">
+                    {t("Get files outside the chain")}
+                </DialogTitle>
 
-    render() {
-        const { classes } = this.props;
+                <DialogContent>
+                    <form onSubmit={submitCreateNewFolder}>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            id="newFolderName"
+                            label={t("External link address")}
+                            type="text"
+                            value={state.source}
+                            fullWidth
+                        />
+                    </form>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onClose}>{t("Close")}</Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog
+                open={props.modalsStatus.createNewFolder}
+                onClose={onClose}
+                aria-labelledby="form-dialog-title"
+            >
+                <DialogTitle id="form-dialog-title">{t("new folder")}</DialogTitle>
 
-        return (
-          <div>
-              <Loading />
-              <Dialog
-                  open={this.props.modalsStatus.getSource}
-                  onClose={this.onClose}
-                  aria-labelledby="form-dialog-title"
-              >
-                  <DialogTitle id="form-dialog-title">
-                    {this.props.t('Get files outside the chain')}
-                  </DialogTitle>
-
-                  <DialogContent>
-                      <form onSubmit={this.submitCreateNewFolder}>
-                          <TextField
-                              autoFocus
-                              margin="dense"
-                              id="newFolderName"
-                              label={this.props.t('External link address')}
-                              type="text"
-                              value={this.state.source}
-                              fullWidth
-                          />
-                      </form>
-                  </DialogContent>
-                  <DialogActions>
-                      <Button onClick={this.onClose}>{this.props.t('Close')}</Button>
-                  </DialogActions>
-              </Dialog>
-              <Dialog
-                  open={this.props.modalsStatus.createNewFolder}
-                  onClose={this.onClose}
-                  aria-labelledby="form-dialog-title"
-              >
-                  <DialogTitle id="form-dialog-title">{this.props.t('new folder')}</DialogTitle>
-
-                  <DialogContent>
-                      <form onSubmit={this.submitCreateNewFolder}>
-                          <TextField
-                              autoFocus
-                              margin="dense"
-                              id="newFolderName"
-                              label={this.props.t('Folder name')}
-                              type="text"
-                              value={this.state.newFolderName}
-                              onChange={(e) => this.handleInputChange(e)}
-                              fullWidth
-                          />
-                      </form>
-                  </DialogContent>
-                  <DialogActions>
-                      <Button onClick={this.onClose}>{this.props.t('Cancel')}</Button>
-                      <div className={classes.wrapper}>
-                          <Button
-                              onClick={this.submitCreateNewFolder}
-                              color="primary"
-                              disabled={
-                                  this.state.newFolderName === "" ||
-                                  this.props.modalsLoading
-                              }
-                          >
-                            {this.props.t('create')}
-                            {this.props.modalsLoading && (
+                <DialogContent>
+                    <form onSubmit={submitCreateNewFolder}>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            id="newFolderName"
+                            label={t("Folder name")}
+                            type="text"
+                            value={state.newFolderName}
+                            onChange={(e) => handleInputChange(e)}
+                            fullWidth
+                        />
+                    </form>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onClose}>{t("Cancel")}</Button>
+                    <div className={classes.wrapper}>
+                        <Button
+                            onClick={submitCreateNewFolder}
+                            color="primary"
+                            disabled={
+                                state.newFolderName === "" ||
+                                props.modalsLoading
+                            }
+                        >
+                            {t("create")}
+                            {props.modalsLoading && (
                                 <CircularProgress
                                     size={24}
                                     className={classes.buttonProgress}
                                 />
                             )}
-                          </Button>
-                      </div>
-                  </DialogActions>
-              </Dialog>
+                        </Button>
+                    </div>
+                </DialogActions>
+            </Dialog>
 
-              <Dialog
-                  open={this.props.modalsStatus.createNewFile}
-                  onClose={this.onClose}
-                  aria-labelledby="form-dialog-title"
-              >
-                  <DialogTitle id="form-dialog-title">{this.props.t('New file')}</DialogTitle>
+            <Dialog
+                open={props.modalsStatus.createNewFile}
+                onClose={onClose}
+                aria-labelledby="form-dialog-title"
+            >
+                <DialogTitle id="form-dialog-title">{t("New file")}</DialogTitle>
 
-                  <DialogContent>
-                      <form onSubmit={this.submitCreateNewFile}>
-                          <TextField
-                              autoFocus
-                              margin="dense"
-                              id="newFileName"
-                              label={this.props.t('File name')}
-                              type="text"
-                              value={this.state.newFileName}
-                              onChange={(e) => this.handleInputChange(e)}
-                              fullWidth
-                          />
-                      </form>
-                  </DialogContent>
-                  <DialogActions>
-                      <Button onClick={this.onClose}>{this.props.t('Cancel')}</Button>
-                      <div className={classes.wrapper}>
-                          <Button
-                              onClick={this.submitCreateNewFile}
-                              color="primary"
-                              disabled={
-                                  this.state.newFileName === "" ||
-                                  this.props.modalsLoading
-                              }
-                          >
-                            {this.props.t('create')}
-                            {this.props.modalsLoading && (
+                <DialogContent>
+                    <form onSubmit={submitCreateNewFile}>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            id="newFileName"
+                            label={t("File name")}
+                            type="text"
+                            value={state.newFileName}
+                            onChange={(e) => handleInputChange(e)}
+                            fullWidth
+                        />
+                    </form>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onClose}>{t("Cancel")}</Button>
+                    <div className={classes.wrapper}>
+                        <Button
+                            onClick={submitCreateNewFile}
+                            color="primary"
+                            disabled={
+                                state.newFileName === "" ||
+                                props.modalsLoading
+                            }
+                        >
+                            {t("create")}
+                            {props.modalsLoading && (
                                 <CircularProgress
                                     size={24}
                                     className={classes.buttonProgress}
                                 />
                             )}
-                          </Button>
-                      </div>
-                  </DialogActions>
-              </Dialog>
+                        </Button>
+                    </div>
+                </DialogActions>
+            </Dialog>
 
-              <Dialog
-                  open={this.props.modalsStatus.rename}
-                  onClose={this.onClose}
-                  aria-labelledby="form-dialog-title"
-                  maxWidth="sm"
-                  fullWidth={true}
-              >
-                  <DialogTitle id="form-dialog-title">{this.props.t('Rename')}</DialogTitle>
-                  <DialogContent>
-                      <DialogContentText>
-                        {this.props.t('enter')}{" "}
+            <Dialog
+                open={props.modalsStatus.rename}
+                onClose={onClose}
+                aria-labelledby="form-dialog-title"
+                maxWidth="sm"
+                fullWidth={true}
+            >
+                <DialogTitle id="form-dialog-title">{t("Rename")}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t("enter")}{" "}
                         <strong>
-                            {this.props.selected.length === 1
-                                ? this.props.selected[0].name
+                            {props.selected.length === 1
+                                ? props.selected[0].name
                                 : ""}
                         </strong>{" "}
-                        {this.props.t('The new name: ')}
-                      </DialogContentText>
-                      <form onSubmit={this.submitRename}>
-                          <TextField
-                              autoFocus
-                              margin="dense"
-                              id="newName"
-                              label={this.props.t('New name')}
-                              type="text"
-                              value={this.state.newName}
-                              onChange={(e) => this.handleInputChange(e)}
-                              fullWidth
-                          />
-                      </form>
-                  </DialogContent>
-                  <DialogActions>
-                      <Button onClick={this.onClose}>{this.props.t('Cancel')}</Button>
-                      <div className={classes.wrapper}>
-                          <Button
-                              onClick={this.submitRename}
-                              color="primary"
-                              disabled={
-                                  this.state.newName === "" ||
-                                  this.props.modalsLoading
-                              }
-                          >
-                            {this.props.t('Ok')}
-                            {this.props.modalsLoading && (
+                        {t("The new name: ")}
+                    </DialogContentText>
+                    <form onSubmit={submitRename}>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            id="newName"
+                            label={t("New name")}
+                            type="text"
+                            value={state.newName}
+                            onChange={(e) => handleInputChange(e)}
+                            fullWidth
+                        />
+                    </form>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onClose}>{t("Cancel")}</Button>
+                    <div className={classes.wrapper}>
+                        <Button
+                            onClick={submitRename}
+                            color="primary"
+                            disabled={
+                                state.newName === "" ||
+                                props.modalsLoading
+                            }
+                        >
+                            {t("Ok")}
+                            {props.modalsLoading && (
                                 <CircularProgress
                                     size={24}
                                     className={classes.buttonProgress}
                                 />
                             )}
-                          </Button>
-                      </div>
-                  </DialogActions>
-              </Dialog>
-              <CopyDialog
-                  open={this.props.modalsStatus.copy}
-                  onClose={this.onClose}
-                  presentPath={this.props.path}
-                  selected={this.props.selected}
-                  modalsLoading={this.props.modalsLoading}
-              />
+                        </Button>
+                    </div>
+                </DialogActions>
+            </Dialog>
+            <CopyDialog
+                open={props.modalsStatus.copy}
+                onClose={onClose}
+                presentPath={props.path}
+                selected={props.selected}
+                modalsLoading={props.modalsLoading}
+            />
 
-              <Dialog
-                  open={this.props.modalsStatus.move}
-                  onClose={this.onClose}
-                  aria-labelledby="form-dialog-title"
-              >
-                  <DialogTitle id="form-dialog-title">{this.props.t('Move to')}</DialogTitle>
-                  <PathSelector
-                      presentPath={this.props.path}
-                      selected={this.props.selected}
-                      onSelect={this.setMoveTarget}
-                  />
+            <Dialog
+                open={props.modalsStatus.move}
+                onClose={onClose}
+                aria-labelledby="form-dialog-title"
+            >
+                <DialogTitle id="form-dialog-title">{t("Move to")}</DialogTitle>
+                <PathSelector
+                    presentPath={props.path}
+                    selected={props.selected}
+                    onSelect={setMoveTarget}
+                />
 
-                  {this.state.selectedPath !== "" && (
-                      <DialogContent className={classes.contentFix}>
-                          <DialogContentText>
-                            {this.props.t('Move to')}{" "}
-                            <strong>{this.state.selectedPathName}</strong>
-                          </DialogContentText>
-                      </DialogContent>
-                  )}
-                  <DialogActions>
-                      <Button onClick={this.onClose}>{this.props.t('Cancel')}</Button>
-                      <div className={classes.wrapper}>
-                          <Button
-                              onClick={this.submitMove}
-                              color="primary"
-                              disabled={
-                                  this.state.selectedPath === "" ||
-                                  this.props.modalsLoading
-                              }
-                          >
-                            {this.props.t('Ok')}
-                            {this.props.modalsLoading && (
+                {state.selectedPath !== "" && (
+                    <DialogContent className={classes.contentFix}>
+                        <DialogContentText>
+                            {t("Move to")}{" "}
+                            <strong>{state.selectedPathName}</strong>
+                        </DialogContentText>
+                    </DialogContent>
+                )}
+                <DialogActions>
+                    <Button onClick={onClose}>{t("Cancel")}</Button>
+                    <div className={classes.wrapper}>
+                        <Button
+                            onClick={submitMove}
+                            color="primary"
+                            disabled={
+                                state.selectedPath === "" ||
+                                props.modalsLoading
+                            }
+                        >
+                            {t("Ok")}
+                            {props.modalsLoading && (
                                 <CircularProgress
                                     size={24}
                                     className={classes.buttonProgress}
                                 />
                             )}
-                          </Button>
-                      </div>
-                  </DialogActions>
-              </Dialog>
-              <Dialog
-                  open={this.props.modalsStatus.remove}
-                  onClose={this.onClose}
-                  aria-labelledby="form-dialog-title"
-              >
-                  <DialogTitle id="form-dialog-title">{this.props.t('Delete Object')}</DialogTitle>
+                        </Button>
+                    </div>
+                </DialogActions>
+            </Dialog>
+            <Dialog
+                open={props.modalsStatus.remove}
+                onClose={onClose}
+                aria-labelledby="form-dialog-title"
+            >
+                <DialogTitle id="form-dialog-title">{t("Delete Object")}</DialogTitle>
 
-                  <DialogContent>
-                      <DialogContentText>
-                        {this.props.t('Are you sure you want to delete')}
-                        {this.props.selected.length === 1 && (
-                            <strong> {this.props.selected[0].name} </strong>
+                <DialogContent>
+                    <DialogContentText>
+                        {t("Are you sure you want to delete")}
+                        {props.selected.length === 1 && (
+                            <strong> {props.selected[0].name} </strong>
                         )}
-                        {this.props.selected.length > 1 && (
+                        {props.selected.length > 1 && (
                             (<span>
-                              {this.props.t('this')}{this.props.selected.length}{this.props.t('Objects')}
+                              {t("this")}{props.selected.length}{t("Objects")}
                             </span>)
                         )}
-                        {this.props.t('?')}
-                      </DialogContentText>
-                  </DialogContent>
-                  <DialogActions>
-                      <Button onClick={this.onClose}>{this.props.t('Cancel')}</Button>
-                      <div className={classes.wrapper}>
-                          <Button
-                              onClick={this.submitRemove}
-                              color="primary"
-                              disabled={this.props.modalsLoading}
-                          >
-                            {this.props.t('Ok')}
-                            {this.props.modalsLoading && (
+                        {t("?")}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onClose}>{t("Cancel")}</Button>
+                    <div className={classes.wrapper}>
+                        <Button
+                            onClick={submitRemove}
+                            color="primary"
+                            disabled={props.modalsLoading}
+                        >
+                            {t("Ok")}
+                            {props.modalsLoading && (
                                 <CircularProgress
                                     size={24}
                                     className={classes.buttonProgress}
                                 />
                             )}
-                          </Button>
-                      </div>
-                  </DialogActions>
-              </Dialog>
+                        </Button>
+                    </div>
+                </DialogActions>
+            </Dialog>
 
-              <CreatShare
-                  open={this.props.modalsStatus.share}
-                  onClose={this.onClose}
-                  modalsLoading={this.props.modalsLoading}
-                  setModalsLoading={this.props.setModalsLoading}
-                  selected={this.props.selected}
-              />
+            <CreatShare
+                open={props.modalsStatus.share}
+                onClose={onClose}
+                modalsLoading={props.modalsLoading}
+                setModalsLoading={props.setModalsLoading}
+                selected={props.selected}
+            />
 
-              <Dialog
-                  open={this.props.modalsStatus.music}
-                  onClose={this.onClose}
-                  aria-labelledby="form-dialog-title"
-              >
-                  <DialogTitle id="form-dialog-title">{this.props.t('Music player')}</DialogTitle>
+            <Dialog
+                open={props.modalsStatus.music}
+                onClose={onClose}
+                aria-labelledby="form-dialog-title"
+            >
+                <DialogTitle id="form-dialog-title">{t("Music player")}</DialogTitle>
 
-                  <DialogContent>
-                      <DialogContentText>
-                          {this.props.selected.length !== 0 && (
-                              <audio
-                                  controls
-                                  src={
-                                      pathHelper.isSharePage(
-                                          this.props.location.pathname
-                                      )
-                                          ? baseURL +
-                                            "/share/preview/" +
-                                            this.props.selected[0].key +
-                                            (this.props.selected[0].key
-                                                ? "?path=" +
-                                                  encodeURIComponent(
-                                                      this.props.selected[0]
-                                                          .path === "/"
-                                                          ? this.props
-                                                                .selected[0]
-                                                                .path +
-                                                                this.props
-                                                                    .selected[0]
-                                                                    .name
-                                                          : this.props
-                                                                .selected[0]
-                                                                .path +
-                                                                "/" +
-                                                                this.props
-                                                                    .selected[0]
-                                                                    .name
-                                                  )
-                                                : "")
-                                          : baseURL +
-                                            "/file/preview/" +
-                                            this.props.selected[0].id
-                                  }
-                              />
-                          )}
-                      </DialogContentText>
-                  </DialogContent>
-                  <DialogActions>
-                      <Button onClick={this.onClose}>{this.props.t('Close')}</Button>
-                  </DialogActions>
-              </Dialog>
-              <Dialog
-                  open={this.props.modalsStatus.remoteDownload}
-                  onClose={this.onClose}
-                  aria-labelledby="form-dialog-title"
-                  fullWidth
-              >
-                  <DialogTitle id="form-dialog-title">
-                    {this.props.t('Create a new offline download task')}
-                  </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {props.selected.length !== 0 && (
+                            <audio
+                                controls
+                                src={
+                                    pathHelper.isSharePage(
+                                        location.pathname
+                                    )
+                                        ? baseURL +
+                                        "/share/preview/" +
+                                        props.selected[0].key +
+                                        (props.selected[0].key
+                                            ? "?path=" +
+                                            encodeURIComponent(
+                                                props.selected[0]
+                                                    .path === "/"
+                                                    ? props
+                                                        .selected[0]
+                                                        .path +
+                                                    props
+                                                        .selected[0]
+                                                        .name
+                                                    : props
+                                                        .selected[0]
+                                                        .path +
+                                                    "/" +
+                                                    props
+                                                        .selected[0]
+                                                        .name
+                                            )
+                                            : "")
+                                        : baseURL +
+                                        "/file/preview/" +
+                                        props.selected[0].id
+                                }
+                            />
+                        )}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onClose}>{t("Close")}</Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog
+                open={props.modalsStatus.remoteDownload}
+                onClose={onClose}
+                aria-labelledby="form-dialog-title"
+                fullWidth
+            >
+                <DialogTitle id="form-dialog-title">
+                    {t("Create a new offline download task")}
+                </DialogTitle>
 
-                  <DialogContent>
-                      <DialogContentText>
-                          <TextField
-                              label={this.props.t('File Address')}
-                              autoFocus
-                              fullWidth
-                              id="downloadURL"
-                              onChange={this.handleInputChange}
-                              placeholder={this.props.t('Enter the file download address, support HTTP(s)/FTP/magnet link')}
-                          />
-                      </DialogContentText>
-                  </DialogContent>
-                  <DialogActions>
-                      <Button onClick={this.onClose}>{this.props.t('Close')}</Button>
-                      <Button
-                          onClick={this.remoteDownloadNext}
-                          color="primary"
-                          disabled={
-                              this.props.modalsLoading ||
-                              this.state.downloadURL === ""
-                          }
-                      >
-                        {this.props.t('Next step"')}
-                      </Button>
-                  </DialogActions>
-              </Dialog>
-              <Dialog
-                  open={this.state.remoteDownloadPathSelect}
-                  onClose={this.onClose}
-                  aria-labelledby="form-dialog-title"
-              >
-                  <DialogTitle id="form-dialog-title">
-                    {this.props.t('Choose storage location')}
-                  </DialogTitle>
-                  <PathSelector
-                      presentPath={this.props.path}
-                      selected={this.props.selected}
-                      onSelect={this.setMoveTarget}
-                  />
+                <DialogContent>
+                    <DialogContentText>
+                        <TextField
+                            label={t("File Address")}
+                            autoFocus
+                            fullWidth
+                            id="downloadURL"
+                            onChange={handleInputChange}
+                            placeholder={t("Enter the file download address, support HTTP(s)/FTP/magnet link")}
+                        />
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onClose}>{t("Close")}</Button>
+                    <Button
+                        onClick={remoteDownloadNext}
+                        color="primary"
+                        disabled={
+                            props.modalsLoading ||
+                            state.downloadURL === ""
+                        }
+                    >
+                        {t("Next step\"")}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog
+                open={state.remoteDownloadPathSelect}
+                onClose={onClose}
+                aria-labelledby="form-dialog-title"
+            >
+                <DialogTitle id="form-dialog-title">
+                    {t("Choose storage location")}
+                </DialogTitle>
+                <PathSelector
+                    presentPath={props.path}
+                    selected={props.selected}
+                    onSelect={setMoveTarget}
+                />
 
-                  {this.state.selectedPath !== "" && (
-                      <DialogContent className={classes.contentFix}>
-                          <DialogContentText>
-                            {this.props.t('Download to')}{" "}
-                            <strong>{this.state.selectedPathName}</strong>
-                          </DialogContentText>
-                      </DialogContent>
-                  )}
-                  <DialogActions>
-                      <Button onClick={this.onClose}>{this.props.t('Cancel')}</Button>
-                      <div className={classes.wrapper}>
-                          <Button
-                              onClick={this.submitDownload}
-                              color="primary"
-                              disabled={
-                                  this.state.selectedPath === "" ||
-                                  this.props.modalsLoading
-                              }
-                          >
-                            {this.props.t('Create Task')}
-                            {this.props.modalsLoading && (
+                {state.selectedPath !== "" && (
+                    <DialogContent className={classes.contentFix}>
+                        <DialogContentText>
+                            {t("Download to")}{" "}
+                            <strong>{state.selectedPathName}</strong>
+                        </DialogContentText>
+                    </DialogContent>
+                )}
+                <DialogActions>
+                    <Button onClick={onClose}>{t("Cancel")}</Button>
+                    <div className={classes.wrapper}>
+                        <Button
+                            onClick={submitDownload}
+                            color="primary"
+                            disabled={
+                                state.selectedPath === "" ||
+                                props.modalsLoading
+                            }
+                        >
+                            {t("Create Task")}
+                            {props.modalsLoading && (
                                 <CircularProgress
                                     size={24}
                                     className={classes.buttonProgress}
                                 />
                             )}
-                          </Button>
-                      </div>
-                  </DialogActions>
-              </Dialog>
-              <Dialog
-                  open={this.props.modalsStatus.torrentDownload}
-                  onClose={this.onClose}
-                  aria-labelledby="form-dialog-title"
-              >
-                  <DialogTitle id="form-dialog-title">
-                    {this.props.t('Choose storage location')}
-                  </DialogTitle>
-                  <PathSelector
-                      presentPath={this.props.path}
-                      selected={this.props.selected}
-                      onSelect={this.setMoveTarget}
-                  />
+                        </Button>
+                    </div>
+                </DialogActions>
+            </Dialog>
+            <Dialog
+                open={props.modalsStatus.torrentDownload}
+                onClose={onClose}
+                aria-labelledby="form-dialog-title"
+            >
+                <DialogTitle id="form-dialog-title">
+                    {t("Choose storage location")}
+                </DialogTitle>
+                <PathSelector
+                    presentPath={props.path}
+                    selected={props.selected}
+                    onSelect={setMoveTarget}
+                />
 
-                  {this.state.selectedPath !== "" && (
-                      <DialogContent className={classes.contentFix}>
-                          <DialogContentText>
-                            {this.props.t('Download to')}{" "}
-                            <strong>{this.state.selectedPathName}</strong>
-                          </DialogContentText>
-                      </DialogContent>
-                  )}
-                  <DialogActions>
-                      <Button onClick={this.onClose}>{this.props.t('Cancel')}</Button>
-                      <div className={classes.wrapper}>
-                          <Button
-                              onClick={this.submitTorrentDownload}
-                              color="primary"
-                              disabled={
-                                  this.state.selectedPath === "" ||
-                                  this.props.modalsLoading
-                              }
-                          >
-                            {this.props.t('Create Task')}
-                            {this.props.modalsLoading && (
+                {state.selectedPath !== "" && (
+                    <DialogContent className={classes.contentFix}>
+                        <DialogContentText>
+                            {t("Download to")}{" "}
+                            <strong>{state.selectedPathName}</strong>
+                        </DialogContentText>
+                    </DialogContent>
+                )}
+                <DialogActions>
+                    <Button onClick={onClose}>{t("Cancel")}</Button>
+                    <div className={classes.wrapper}>
+                        <Button
+                            onClick={submitTorrentDownload}
+                            color="primary"
+                            disabled={
+                                state.selectedPath === "" ||
+                                props.modalsLoading
+                            }
+                        >
+                            {t("Create Task")}
+                            {props.modalsLoading && (
                                 <CircularProgress
                                     size={24}
                                     className={classes.buttonProgress}
                                 />
                             )}
-                          </Button>
-                      </div>
-                  </DialogActions>
-              </Dialog>
+                        </Button>
+                    </div>
+                </DialogActions>
+            </Dialog>
 
-              <DecompressDialog
-                  open={this.props.modalsStatus.decompress}
-                  onClose={this.onClose}
-                  presentPath={this.props.path}
-                  selected={this.props.selected}
-                  modalsLoading={this.props.modalsLoading}
-              />
-              <CompressDialog
-                  open={this.props.modalsStatus.compress}
-                  onClose={this.onClose}
-                  presentPath={this.props.path}
-                  selected={this.props.selected}
-                  modalsLoading={this.props.modalsLoading}
-              />
-          </div>
-        );
-    }
+            <DecompressDialog
+                open={props.modalsStatus.decompress}
+                onClose={onClose}
+                presentPath={props.path}
+                selected={props.selected}
+                modalsLoading={props.modalsLoading}
+            />
+            <CompressDialog
+                open={props.modalsStatus.compress}
+                onClose={onClose}
+                presentPath={props.path}
+                selected={props.selected}
+                modalsLoading={props.modalsLoading}
+            />
+        </div>
+    );
 }
-
-ModalsCompoment.propTypes = {
-    classes: PropTypes.object.isRequired,
-};
 
 const Modals = connect(
     mapStateToProps,
     mapDispatchToProps
-)(withTranslation()(withStyles(styles)(withRouter(ModalsCompoment))));
+)((withStyles(styles)(ModalsComponent)));
 
 export default Modals;

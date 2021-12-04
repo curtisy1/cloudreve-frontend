@@ -1,22 +1,21 @@
-import React, { Component } from "react";
-import PropTypes from "prop-types";
+import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { baseURL } from "../../middleware/Api";
 import { showImgPreivew } from "../../actions/index";
 import { imgPreviewSuffix } from "../../config";
 import { withStyles } from "@material-ui/core";
 import pathHelper from "../../utils/page";
-import { withRouter } from "react-router";
 import { PhotoSlider } from "react-photo-view";
 import "react-photo-view/dist/index.css";
 import * as explorer from "../../redux/explorer/reducer";
+import { useLocation } from "react-router-dom";
 
 const styles = () => ({});
 
 const mapStateToProps = (state) => {
     return {
         first: state.explorer.imgPreview.first,
-        other: state.explorer.imgPreview.other,
+        other: state.explorer.imgPreview.other
     };
 };
 
@@ -24,44 +23,45 @@ const mapDispatchToProps = (dispatch) => {
     return {
         showImgPreivew: (first) => {
             dispatch(showImgPreivew(first));
-        },
+        }
     };
 };
 
-class ImagPreviewComponent extends Component {
-    state = {
+function ImagePreviewComponent(props) {
+    const location = useLocation();
+    const [state, setState] = useState({
         items: [],
         photoIndex: 0,
-        isOpen: false,
-    };
+        isOpen: false
+    });
 
-    UNSAFE_componentWillReceiveProps = (nextProps) => {
+    useEffect(() => {
         const items = [];
         let firstOne = 0;
-        if (nextProps.first.id !== "") {
+        if (props.first.id !== "") {
             if (
-                pathHelper.isSharePage(this.props.location.pathname) &&
-                !nextProps.first.path
+                pathHelper.isSharePage(location.pathname) &&
+                !props.first.path
             ) {
                 const newImg = {
-                    intro: nextProps.first.name,
-                    src: baseURL + "/share/preview/" + nextProps.first.key,
+                    intro: props.first.name,
+                    src: baseURL + "/share/preview/" + props.first.key
                 };
                 firstOne = 0;
                 items.push(newImg);
-                this.setState({
+                setState({
                     photoIndex: firstOne,
                     items: items,
-                    isOpen: true,
+                    isOpen: true
                 });
                 return;
             }
             // eslint-disable-next-line
-            nextProps.other.map((value) => {
+            props.other.map((value) => {
                 const fileType = value.name.split(".").pop().toLowerCase();
                 if (imgPreviewSuffix.indexOf(fileType) !== -1) {
-                    let src = "";
-                    if (pathHelper.isSharePage(this.props.location.pathname)) {
+                    let src;
+                    if (pathHelper.isSharePage(location.pathname)) {
                         src = baseURL + "/share/preview/" + value.key;
                         src =
                             src +
@@ -76,62 +76,58 @@ class ImagPreviewComponent extends Component {
                     }
                     const newImg = {
                         intro: value.name,
-                        src: src,
+                        src: src
                     };
                     if (
-                        value.path === nextProps.first.path &&
-                        value.name === nextProps.first.name
+                        value.path === props.first.path &&
+                        value.name === props.first.name
                     ) {
                         firstOne = items.length;
                     }
                     items.push(newImg);
                 }
             });
-            this.setState({
+            setState({
                 photoIndex: firstOne,
                 items: items,
-                isOpen: true,
+                isOpen: true
             });
         }
-    };
+    }, [props]);
 
-    handleClose = () => {
-        this.props.showImgPreivew(explorer.initState.imgPreview.first);
-        this.setState({
-            isOpen: false,
+    function handleClose() {
+        props.showImgPreivew(explorer.initState.imgPreview.first);
+        setState({
+            ...state,
+            isOpen: false
         });
-    };
-
-    render() {
-        const { photoIndex, isOpen, items } = this.state;
-
-        return (
-            <div>
-                {isOpen && (
-                    <PhotoSlider
-                        images={items}
-                        visible={isOpen}
-                        onClose={() => this.handleClose()}
-                        index={photoIndex}
-                        onIndexChange={(n) =>
-                            this.setState({
-                                photoIndex: n,
-                            })
-                        }
-                    />
-                )}
-            </div>
-        );
     }
+
+    const { photoIndex, isOpen, items } = state;
+
+    return (
+        <div>
+            {isOpen && (
+                <PhotoSlider
+                    images={items}
+                    visible={isOpen}
+                    onClose={() => handleClose()}
+                    index={photoIndex}
+                    onIndexChange={(n) =>
+                        setState({
+                            ...state,
+                            photoIndex: n
+                        })
+                    }
+                />
+            )}
+        </div>
+    );
 }
 
-ImagPreviewComponent.propTypes = {
-    classes: PropTypes.object.isRequired,
-};
-
-const ImgPreivew = connect(
+const ImgPreview = connect(
     mapStateToProps,
     mapDispatchToProps
-)(withStyles(styles)(withRouter(ImagPreviewComponent)));
+)(withStyles(styles)(ImagePreviewComponent));
 
-export default ImgPreivew;
+export default ImgPreview;

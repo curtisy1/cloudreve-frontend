@@ -8,32 +8,34 @@ import thunk from "redux-thunk";
 import App from "./App";
 import cloureveApp from "./reducers";
 import { UpdateSiteConfig } from "./middleware/Init";
-import ErrorBoundary from "./component/Placeholder/ErrorBoundary";
+import ErrorBoundary from "react-error-boundary";
+import ErrorFallback from "./component/Placeholder/ErrorBoundary";
 import { createBrowserHistory } from "history";
 import { routerMiddleware } from "connected-react-router";
 import { ConnectedRouter } from "connected-react-router";
+
 const Admin = React.lazy(() => import("./Admin"));
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import * as en from './locales/en-US.json';
-import * as zhCn from './locales/zh-CN.json';
+import * as en from "./locales/en-US.json";
+import * as zhCn from "./locales/zh-CN.json";
 
 i18n
-  .use(initReactI18next)
-  .init({
-    resources: {
-      "en-US": {
-        translation: en,
-      },
-      "zh-CN": {
-        translation: zhCn,
-      }
-    },
-    lng: "en-US",
-    interpolation: {
-      escapeValue: false
-    }
-});
+    .use(initReactI18next)
+    .init({
+        resources: {
+            "en-US": {
+                translation: en
+            },
+            "zh-CN": {
+                translation: zhCn
+            }
+        },
+        lng: "en-US",
+        interpolation: {
+            escapeValue: false
+        }
+    });
 
 if (window.location.hash !== "") {
     window.location.href = window.location.hash.split("#")[1];
@@ -53,7 +55,7 @@ const store = createStore(cloureveApp(history), reduxEnhance);
 UpdateSiteConfig(store);
 
 ReactDOM.render(
-    <ErrorBoundary>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
         <Provider store={store}>
             <ConnectedRouter history={history}>
                 <Switch>

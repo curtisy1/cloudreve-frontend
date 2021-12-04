@@ -1,8 +1,7 @@
-import { withTranslation } from "react-i18next";
-import React, { Component } from "react";
-import PropTypes from "prop-types";
+import { useTranslation } from "react-i18next";
+import React, { useEffect, useRef, useState } from "react";
 import { connect } from "react-redux";
-import { withRouter } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import RightIcon from "@material-ui/icons/KeyboardArrowRight";
 import ShareIcon from "@material-ui/icons/Share";
 import NewFolderIcon from "@material-ui/icons/CreateNewFolder";
@@ -17,7 +16,7 @@ import {
     openCreateFolderDialog,
     openShareDialog,
     drawerToggleAction,
-    openCompressDialog,
+    openCompressDialog
 } from "../../../actions/index";
 import explorer from "../../../redux/explorer";
 import API from "../../../middleware/Api";
@@ -27,14 +26,13 @@ import {
     Divider,
     Menu,
     MenuItem,
-    ListItemIcon,
+    ListItemIcon
 } from "@material-ui/core";
 import PathButton from "./PathButton";
 import DropDown from "./DropDown";
 import pathHelper from "../../../utils/page";
 import classNames from "classnames";
 import Auth from "../../../middleware/Auth";
-import Avatar from "@material-ui/core/Avatar";
 import { Archive } from "@material-ui/icons";
 import { FilePlus } from "mdi-material-ui";
 import { openCreateFileDialog } from "../../../actions";
@@ -47,7 +45,7 @@ const mapStateToProps = (state) => {
         drawerDesktopOpen: state.viewUpdate.open,
         viewMethod: state.viewUpdate.explorerViewMethod,
         keywords: state.explorer.keywords,
-        sortMethod: state.viewUpdate.sortMethod,
+        sortMethod: state.viewUpdate.sortMethod
     };
 };
 
@@ -88,7 +86,7 @@ const mapDispatchToProps = (dispatch) => {
         },
         openCompressDialog: () => {
             dispatch(openCompressDialog());
-        },
+        }
     };
 };
 
@@ -97,64 +95,117 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const styles = (theme) => ({
     container: {
         [theme.breakpoints.down("xs")]: {
-            display: "none",
+            display: "none"
         },
         height: "49px",
         overflow: "hidden",
-        backgroundColor: theme.palette.background.paper,
+        backgroundColor: theme.palette.background.paper
     },
     navigatorContainer: {
         display: "flex",
-        justifyContent: "space-between",
+        justifyContent: "space-between"
     },
     nav: {
         height: "48px",
         padding: "5px 15px",
-        display: "flex",
+        display: "flex"
     },
     optionContainer: {
         paddingTop: "6px",
-        marginRight: "10px",
+        marginRight: "10px"
     },
     rightIcon: {
         marginTop: "6px",
         verticalAlign: "top",
-        color: "#868686",
+        color: "#868686"
     },
     expandMore: {
-        color: "#8d8d8d",
+        color: "#8d8d8d"
     },
     roundBorder: {
-        borderRadius: "4px 4px 0 0",
-    },
+        borderRadius: "4px 4px 0 0"
+    }
 });
 
-class NavigatorComponent extends Component {
-    keywords = "";
-    currentID = 0;
+function NavigatorComponent(props) {
+    let currentID = 0;
 
-    state = {
+    const location = useLocation();
+    const { t } = useTranslation();
+    const element = useRef();
+    const [state, setState] = useState({
         hidden: false,
         hiddenFolders: [],
         folders: [],
         anchorEl: null,
         hiddenMode: false,
-        anchorHidden: null,
-    };
+        anchorHidden: null
+    });
 
-    constructor(props) {
-        super(props);
-        this.element = React.createRef();
+    function checkOverFlow(force) {
+        if (!force) {
+            return;
+        }
+        if (element.current !== null) {
+            const hasOverflowingChildren =
+                element.current.offsetHeight <
+                element.current.scrollHeight ||
+                element.current.offsetWidth <
+                element.current.scrollWidth;
+            if (hasOverflowingChildren) {
+                setState({...state, hiddenMode: true });
+            }
+            if (!hasOverflowingChildren && state.hiddenMode) {
+                setState({ ...state, hiddenMode: false });
+            }
+        }
     }
 
-    componentDidMount = () => {
+    function renderPath(path = null) {
+        props.setNavigatorError(false, null);
+        setState({
+            folders:
+                path !== null
+                    ? path.substr(1).split("/")
+                    : props.path.substr(1).split("/")
+        });
+        let newPath = path !== null ? path : props.path;
+        const apiURL = props.share
+            ? "/share/list/" + props.share.key
+            : props.keywords === ""
+                ? "/directory"
+                : "/file/search/";
+        newPath = props.keywords === "" ? newPath : props.keywords;
+
+        API.get(apiURL + encodeURIComponent(newPath))
+            .then((response) => {
+                currentID = response.data.parent;
+                props.updateFileList(response.data.objects);
+                props.setNavigatorLoadingStatus(false);
+                const pathTemp = (path !== null
+                        ? path.substr(1).split("/")
+                        : props.path.substr(1).split("/")
+                ).join(",");
+                setCookie("path_tmp", encodeURIComponent(pathTemp), 1);
+                if (props.keywords === "") {
+                    setGetParameter("path", encodeURIComponent(newPath));
+                }
+            })
+            .catch((error) => {
+                props.setNavigatorError(true, error);
+            });
+
+        checkOverFlow(true);
+    }
+
+    useEffect(() => {
         const url = new URL(fixUrlHash(window.location.href));
         const c = url.searchParams.get("path");
-        this.renderPath(c === null ? "/" : c);
+        renderPath(c === null ? "/" : c);
 
-        if (!this.props.isShare) {
+        if (!props.isShare) {
             // 如果是在个人文件管理页，首次加载时打开侧边栏
-            this.props.handleDesktopToggle(true);
+            props.handleDesktopToggle(true);
         }
 
         // 后退操作时重新导航
@@ -162,292 +213,229 @@ class NavigatorComponent extends Component {
             const url = new URL(fixUrlHash(window.location.href));
             const c = url.searchParams.get("path");
             if (c !== null) {
-                this.props.navigateToPath(c);
+                props.navigateToPath(c);
             }
         };
-    };
 
-    renderPath = (path = null) => {
-        this.props.setNavigatorError(false, null);
-        this.setState({
-            folders:
-                path !== null
-                    ? path.substr(1).split("/")
-                    : this.props.path.substr(1).split("/"),
-        });
-        let newPath = path !== null ? path : this.props.path;
-        const apiURL = this.props.share
-            ? "/share/list/" + this.props.share.key
-            : this.keywords === ""
-            ? "/directory"
-            : "/file/search/";
-        newPath = this.keywords === "" ? newPath : this.keywords;
+        return function cleanup() {
+            props.updateFileList([]);
+        };
+    }, []);
 
-        API.get(apiURL + encodeURIComponent(newPath))
-            .then((response) => {
-                this.currentID = response.data.parent;
-                this.props.updateFileList(response.data.objects);
-                this.props.setNavigatorLoadingStatus(false);
-                const pathTemp = (path !== null
-                    ? path.substr(1).split("/")
-                    : this.props.path.substr(1).split("/")
-                ).join(",");
-                setCookie("path_tmp", encodeURIComponent(pathTemp), 1);
-                if (this.keywords === "") {
-                    setGetParameter("path", encodeURIComponent(newPath));
-                }
-            })
-            .catch((error) => {
-                this.props.setNavigatorError(true, error);
-            });
-
-        this.checkOverFlow(true);
-    };
-
-    redresh = (path) => {
-        this.props.setNavigatorLoadingStatus(true);
-        this.props.setNavigatorError(false, "error");
-        this.renderPath(path);
-    };
-
-    UNSAFE_componentWillReceiveProps = (nextProps) => {
-        if (this.props.keywords !== nextProps.keywords) {
-            this.keywords = nextProps.keywords;
-        }
-        if (this.props.path !== nextProps.path) {
-            this.renderPath(nextProps.path);
-        }
-        if (this.props.refresh !== nextProps.refresh) {
-            this.redresh(nextProps.path);
-        }
-    };
-
-    componentWillUnmount() {
-        this.props.updateFileList([]);
+    function refresh(path) {
+        props.setNavigatorLoadingStatus(true);
+        props.setNavigatorError(false, "error");
+        renderPath(path);
     }
 
-    componentDidUpdate = (prevProps, prevStates) => {
-        if (this.state.folders !== prevStates.folders) {
-            this.checkOverFlow(true);
-        }
-        if (this.props.drawerDesktopOpen !== prevProps.drawerDesktopOpen) {
-            delay(500).then(() => this.checkOverFlow());
-        }
-    };
+    useEffect(() => {
+        renderPath(props.path);
+    }, [props.path]);
 
-    checkOverFlow = (force) => {
-        if (this.overflowInitLock && !force) {
-            return;
-        }
-        if (this.element.current !== null) {
-            const hasOverflowingChildren =
-                this.element.current.offsetHeight <
-                    this.element.current.scrollHeight ||
-                this.element.current.offsetWidth <
-                    this.element.current.scrollWidth;
-            if (hasOverflowingChildren) {
-                this.overflowInitLock = true;
-                this.setState({ hiddenMode: true });
-            }
-            if (!hasOverflowingChildren && this.state.hiddenMode) {
-                this.setState({ hiddenMode: false });
-            }
-        }
-    };
+    useEffect(() => {
+        refresh(props.path);
+    }, [props.refresh]);
 
-    navigateTo = (event, id) => {
-        if (id === this.state.folders.length - 1) {
+    useEffect(() => {
+        checkOverFlow(true);
+    }, [props.folders]);
+
+    useEffect(() => {
+        delay(500).then(() => checkOverFlow());
+    }, [props.drawerDesktopOpen]);
+
+    function handleClose() {
+        setState({ ...state, anchorEl: null, anchorHidden: null, anchorSort: null });
+    }
+
+    function navigateTo(event, id) {
+        if (id === state.folders.length - 1) {
             //最后一个路径
-            this.setState({ anchorEl: event.currentTarget });
+            setState({ ...state, anchorEl: event.currentTarget });
         } else if (
             id === -1 &&
-            this.state.folders.length === 1 &&
-            this.state.folders[0] === ""
+            state.folders.length === 1 &&
+            state.folders[0] === ""
         ) {
-            this.props.refreshFileList();
-            this.handleClose();
+            props.refreshFileList();
+            handleClose();
         } else if (id === -1) {
-            this.props.navigateToPath("/");
-            this.handleClose();
+            props.navigateToPath("/");
+            handleClose();
         } else {
-            this.props.navigateToPath(
-                "/" + this.state.folders.slice(0, id + 1).join("/")
+            props.navigateToPath(
+                "/" + state.folders.slice(0, id + 1).join("/")
             );
-            this.handleClose();
+            handleClose();
         }
-    };
+    }
 
-    handleClose = () => {
-        this.setState({ anchorEl: null, anchorHidden: null, anchorSort: null });
-    };
+    function showHiddenPath(e) {
+        setState({ ...state, anchorHidden: e.currentTarget });
+    }
 
-    showHiddenPath = (e) => {
-        this.setState({ anchorHidden: e.currentTarget });
-    };
-
-    performAction = (e) => {
-        this.handleClose();
+    function performAction(e) {
+        handleClose();
         if (e === "refresh") {
-            this.redresh();
+            refresh();
             return;
         }
-        const presentPath = this.props.path.split("/");
+        const presentPath = props.path.split("/");
         const newTarget = [
             {
-                id: this.currentID,
+                id: currentID,
                 type: "dir",
                 name: presentPath.pop(),
-                path: presentPath.length === 1 ? "/" : presentPath.join("/"),
-            },
+                path: presentPath.length === 1 ? "/" : presentPath.join("/")
+            }
         ];
-        //this.props.navitateUp();
+        //props.navitateUp();
         switch (e) {
             case "share":
-                this.props.setSelectedTarget(newTarget);
-                this.props.openShareDialog();
+                props.setSelectedTarget(newTarget);
+                props.openShareDialog();
                 break;
             case "newfolder":
-                this.props.openCreateFolderDialog();
+                props.openCreateFolderDialog();
                 break;
             case "compress":
-                this.props.setSelectedTarget(newTarget);
-                this.props.openCompressDialog();
+                props.setSelectedTarget(newTarget);
+                props.openCompressDialog();
                 break;
             case "newFile":
-                this.props.openCreateFileDialog();
+                props.openCreateFileDialog();
                 break;
             default:
                 break;
         }
-    };
+    }
 
-    render() {
-        const { classes } = this.props;
-        const isHomePage = pathHelper.isHomePage(this.props.location.pathname);
-        const user = Auth.GetUser();
+    const { classes } = props;
+    const isHomePage = pathHelper.isHomePage(location.pathname);
+    const user = Auth.GetUser();
 
-        const presentFolderMenu = (
-            <Menu
-                id="presentFolderMenu"
-                anchorEl={this.state.anchorEl}
-                open={Boolean(this.state.anchorEl)}
-                onClose={this.handleClose}
-                disableAutoFocusItem={true}
-            >
-                <MenuItem onClick={() => this.performAction("refresh")}>
-                  <ListItemIcon>
-                      <RefreshIcon />
-                  </ListItemIcon>
-                  {this.props.t('Refresh')}
-                </MenuItem>
-                {this.props.keywords === "" && isHomePage && (
-                    <div>
-                        <Divider />
-                        <MenuItem onClick={() => this.performAction("share")}>
-                          <ListItemIcon>
-                              <ShareIcon />
-                          </ListItemIcon>
-                          {this.props.t('share')}
-                        </MenuItem>
-                        {user.group.compress && (
-                            (<MenuItem
-                                onClick={() => this.performAction("compress")}
-                            >
-                              <ListItemIcon>
-                                  <Archive />
-                              </ListItemIcon>
-                              {this.props.t('compression')}
-                            </MenuItem>)
-                        )}
-                        <Divider />
-                        <MenuItem
-                            onClick={() => this.performAction("newfolder")}
+    const presentFolderMenu = (
+        <Menu
+            id="presentFolderMenu"
+            anchorEl={state.anchorEl}
+            open={Boolean(state.anchorEl)}
+            onClose={handleClose}
+            disableAutoFocusItem={true}
+        >
+            <MenuItem onClick={() => performAction("refresh")}>
+                <ListItemIcon>
+                    <RefreshIcon />
+                </ListItemIcon>
+                {t("Refresh")}
+            </MenuItem>
+            {props.keywords === "" && isHomePage && (
+                <div>
+                    <Divider />
+                    <MenuItem onClick={() => performAction("share")}>
+                        <ListItemIcon>
+                            <ShareIcon />
+                        </ListItemIcon>
+                        {t("share")}
+                    </MenuItem>
+                    {user.group.compress && (
+                        (<MenuItem
+                            onClick={() => performAction("compress")}
                         >
-                          <ListItemIcon>
-                              <NewFolderIcon />
-                          </ListItemIcon>
-                          {this.props.t('Create Folder')}
-                        </MenuItem>
-                        <MenuItem onClick={() => this.performAction("newFile")}>
-                          <ListItemIcon>
-                              <FilePlus />
-                          </ListItemIcon>
-                          {this.props.t('Create a file')}
-                        </MenuItem>
-                    </div>
-                )}
-            </Menu>
-        );
+                            <ListItemIcon>
+                                <Archive />
+                            </ListItemIcon>
+                            {t("compression")}
+                        </MenuItem>)
+                    )}
+                    <Divider />
+                    <MenuItem
+                        onClick={() => performAction("newfolder")}
+                    >
+                        <ListItemIcon>
+                            <NewFolderIcon />
+                        </ListItemIcon>
+                        {t("Create Folder")}
+                    </MenuItem>
+                    <MenuItem onClick={() => performAction("newFile")}>
+                        <ListItemIcon>
+                            <FilePlus />
+                        </ListItemIcon>
+                        {t("Create a file")}
+                    </MenuItem>
+                </div>
+            )}
+        </Menu>
+    );
 
-        return (
-          <div
-              className={classNames(
-                  {
-                      [classes.roundBorder]: this.props.isShare,
-                  },
-                  classes.container
-              )}
-          >
-              <div className={classes.navigatorContainer}>
-                  <div className={classes.nav} ref={this.element}>
+    return (
+        <div
+            className={classNames(
+                {
+                    [classes.roundBorder]: props.isShare
+                },
+                classes.container
+            )}
+        >
+            <div className={classes.navigatorContainer}>
+                <div className={classes.nav} ref={element}>
                       <span>
                           <PathButton
                               folder="/"
                               path="/"
-                              onClick={(e) => this.navigateTo(e, -1)}
+                              onClick={(e) => navigateTo(e, -1)}
                           />
                           <RightIcon className={classes.rightIcon} />
                       </span>
-                      {this.state.hiddenMode && (
-                          <span>
+                    {state.hiddenMode && (
+                        <span>
                               <PathButton
                                   more
-                                  title={this.props.t('Display Path')}
-                                  onClick={this.showHiddenPath}
+                                  title={t("Display Path")}
+                                  onClick={showHiddenPath}
                               />
                               <Menu
                                   id="hiddenPathMenu"
-                                  anchorEl={this.state.anchorHidden}
-                                  open={Boolean(this.state.anchorHidden)}
-                                  onClose={this.handleClose}
+                                  anchorEl={state.anchorHidden}
+                                  open={Boolean(state.anchorHidden)}
+                                  onClose={handleClose}
                                   disableAutoFocusItem={true}
                               >
                                   <DropDown
-                                      onClose={this.handleClose}
-                                      folders={this.state.folders.slice(
+                                      onClose={handleClose}
+                                      folders={state.folders.slice(
                                           0,
                                           -1
                                       )}
-                                      navigateTo={this.navigateTo}
+                                      navigateTo={navigateTo}
                                   />
                               </Menu>
                               <RightIcon className={classes.rightIcon} />
-                              {/* <Button component="span" onClick={(e)=>this.navigateTo(e,this.state.folders.length-1)}>
-                                  {this.state.folders.slice(-1)}  
+                            {/* <Button component="span" onClick={(e)=>navigateTo(e,state.folders.length-1)}>
+                                  {state.folders.slice(-1)}  
                                   <ExpandMore className={classes.expandMore}/>
                               </Button> */}
-                              <PathButton
-                                  folder={this.state.folders.slice(-1)}
-                                  path={
-                                      "/" +
-                                      this.state.folders
-                                          .slice(0, -1)
-                                          .join("/")
-                                  }
-                                  last={true}
-                                  onClick={(e) =>
-                                      this.navigateTo(
-                                          e,
-                                          this.state.folders.length - 1
-                                      )
-                                  }
-                              />
-                              {presentFolderMenu}
+                            <PathButton
+                                folder={state.folders.slice(-1)}
+                                path={
+                                    "/" +
+                                    state.folders
+                                        .slice(0, -1)
+                                        .join("/")
+                                }
+                                last={true}
+                                onClick={(e) =>
+                                    navigateTo(
+                                        e,
+                                        state.folders.length - 1
+                                    )
+                                }
+                            />
+                            {presentFolderMenu}
                           </span>
-                      )}
-                      {!this.state.hiddenMode &&
-                          this.state.folders.map((folder, id, folders) => (
-                              <span key={id}>
+                    )}
+                    {!state.hiddenMode &&
+                        state.folders.map((folder, id, folders) => (
+                            <span key={id}>
                                   {folder !== "" && (
                                       <span>
                                           <PathButton
@@ -460,7 +448,7 @@ class NavigatorComponent extends Component {
                                               }
                                               last={id === folders.length - 1}
                                               onClick={(e) =>
-                                                  this.navigateTo(e, id)
+                                                  navigateTo(e, id)
                                               }
                                           />
                                           {id === folders.length - 1 &&
@@ -475,26 +463,20 @@ class NavigatorComponent extends Component {
                                       </span>
                                   )}
                               </span>
-                          ))}
-                  </div>
-                  <div className={classes.optionContainer}>
-                      <SubActions isSmall share={this.props.share} />
-                  </div>
-              </div>
-              <Divider />
-          </div>
-        );
-    }
+                        ))}
+                </div>
+                <div className={classes.optionContainer}>
+                    <SubActions isSmall share={props.share} />
+                </div>
+            </div>
+            <Divider />
+        </div>
+    );
 }
-
-NavigatorComponent.propTypes = {
-    classes: PropTypes.object.isRequired,
-    path: PropTypes.string.isRequired,
-};
 
 const Navigator = connect(
     mapStateToProps,
     mapDispatchToProps
-)(withTranslation()(withStyles(styles)(withRouter(NavigatorComponent))));
+)((withStyles(styles)(NavigatorComponent)));
 
 export default Navigator;

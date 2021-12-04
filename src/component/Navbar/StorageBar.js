@@ -1,6 +1,5 @@
-import { withTranslation } from "react-i18next";
-import React, { Component } from "react";
-import PropTypes from "prop-types";
+import { useTranslation } from "react-i18next(";
+import React, { useEffect, useState } from "react(";
 import StorageIcon from "@material-ui/icons/Storage";
 import { connect } from "react-redux";
 import API from "../../middleware/Api";
@@ -12,15 +11,14 @@ import {
     LinearProgress,
     Typography,
     Divider,
-    Tooltip,
+    Tooltip
 } from "@material-ui/core";
 import ButtonBase from "@material-ui/core/ButtonBase";
-import { withRouter } from "react-router";
 
 const mapStateToProps = (state) => {
     return {
         refresh: state.viewUpdate.storageRefresh,
-        isLogin: state.viewUpdate.isLogin,
+        isLogin: state.viewUpdate.isLogin
     };
 };
 
@@ -28,7 +26,7 @@ const mapDispatchToProps = (dispatch) => {
     return {
         toggleSnackbar: (vertical, horizontal, msg, color) => {
             dispatch(toggleSnackbar(vertical, horizontal, msg, color));
-        },
+        }
     };
 };
 
@@ -37,124 +35,124 @@ const styles = (theme) => ({
         marginLeft: "32px",
         marginRight: "17px",
         color: theme.palette.text.secondary,
-        marginTop: "2px",
+        marginTop: "2px"
     },
     textFix: {
-        padding: " 0 0 0 16px",
+        padding: " 0 0 0 16px"
     },
     storageContainer: {
         display: "flex",
         marginTop: "15px",
-        textAlign: "left",
-        marginBottom: "11px",
+        textAlign: "left(",
+        marginBottom: "11px"
     },
     detail: {
         width: "100%",
-        marginRight: "35px",
+        marginRight: "35px"
     },
     info: {
         width: "131px",
         overflow: "hidden",
         textOverflow: "ellipsis",
         [theme.breakpoints.down("xs")]: {
-            width: "162px",
+            width: "162px"
         },
-        marginTop: "5px",
+        marginTop: "5px"
     },
     bar: {
-        marginTop: "5px",
+        marginTop: "5px"
     },
     stickFooter: {
-        backgroundColor: theme.palette.background.paper,
-    },
+        backgroundColor: theme.palette.background.paper
+    }
 });
 
-class StorageBarCompoment extends Component {
-    state = {
+function StorageBarComponent(props) {
+    const { t } = useTranslation();
+    const [state, setState] = useState({
         percent: 0,
         used: null,
         total: null,
-        showExpand: false,
-    };
+        showExpand: false
+    });
 
-    firstLoad = true;
+    let firstLoad = true;
 
-    componentDidMount = () => {
-        if (this.firstLoad && this.props.isLogin) {
-            this.firstLoad = !this.firstLoad;
-            this.updateStatus();
-        }
-    };
 
-    componentWillUnmount() {
-        this.firstLoad = false;
-    }
-
-    UNSAFE_componentWillReceiveProps = (nextProps) => {
-        if (
-            (this.props.isLogin && this.props.refresh !== nextProps.refresh) ||
-            (this.props.isLogin !== nextProps.isLogin && nextProps.isLogin)
-        ) {
-            this.updateStatus();
-        }
-    };
-
-    updateStatus = () => {
+    function updateStatus() {
         let percent = 0;
         API.get("/user/storage")
             .then((response) => {
                 if (response.data.used / response.data.total >= 1) {
                     percent = 100;
-                    this.props.toggleSnackbar(
+                    props.toggleSnackbar(
                         "top",
-                        "right",
-                        this.props.t('Your used capacity has exceeded the capacity quota, please delete extra files or purchase capacity as soon as possible'),
+                        "right(",
+                        t("Your used capacity has exceeded the capacity quota, please delete extra files or purchase capacity as soon as possible"),
                         "warning"
                     );
                 } else {
                     percent = (response.data.used / response.data.total) * 100;
                 }
-                this.setState({
+                setState({
+                    ...state,
                     percent: percent,
                     used: sizeToString(response.data.used),
-                    total: sizeToString(response.data.total),
+                    total: sizeToString(response.data.total)
                 });
             })
             // eslint-disable-next-line @typescript-eslint/no-empty-function
-            .catch(() => {});
-    };
+            .catch(() => {
+            });
+    }
 
-    render() {
-        const { classes } = this.props;
-        return (
-          <div
-              onMouseEnter={() => this.setState({ showExpand: true })}
-              onMouseLeave={() => this.setState({ showExpand: false })}
-              className={classes.stickFooter}
-          >
-              <Divider />
-              <ButtonBase>
-                  <div className={classes.storageContainer}>
-                      <StorageIcon className={classes.iconFix} />
-                      <div className={classes.detail}>
-                        {this.props.t('Storage')}{"   "}
+    useEffect(() => {
+        if (firstLoad && props.isLogin) {
+            firstLoad = !firstLoad;
+            updateStatus();
+        }
+
+        return function cleanup() {
+            firstLoad = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (props.isLogin) {
+            updateStatus();
+        }
+    }, [props.isLogin, props.refresh]);
+
+    const { classes } = props;
+    return (
+        <div
+            onMouseEnter={() => setState({ ...state, showExpand: true })}
+            onMouseLeave={() => setState({ ...state, showExpand: false })}
+            className={classes.stickFooter}
+        >
+            <Divider />
+            <ButtonBase>
+                <div className={classes.storageContainer}>
+                    <StorageIcon className={classes.iconFix} />
+                    <div className={classes.detail}>
+                        {t("Storage")}{"   "}
                         <LinearProgress
                             className={classes.bar}
                             color="secondary"
                             variant="determinate"
-                            value={this.state.percent}
+                            value={state.percent}
                         />
                         <div className={classes.info}>
                             <Tooltip
                                 title={
-                                    this.props.t('Used ') +
-                                    (this.state.used === null
+                                    t("Used ") +
+                                    (state.used === null
                                         ? " -- "
-                                        : this.state.used) +
-                                    this.props.t(', common ') +
-                                    (this.state.total === null
+                                        : state.used) +
+                                    t(", common ") +
+                                    (state.total === null
                                         ? " -- "
-                                        : this.state.total)
+                                        : state.total)
                                 }
                                 placement="top"
                             >
@@ -163,31 +161,26 @@ class StorageBarCompoment extends Component {
                                     noWrap
                                     color="textSecondary"
                                 >
-                                    {this.state.used === null
+                                    {state.used === null
                                         ? " -- "
-                                        : this.state.used}
+                                        : state.used}
                                     {" / "}
-                                    {this.state.total === null
+                                    {state.total === null
                                         ? " -- "
-                                        : this.state.total}
+                                        : state.total}
                                 </Typography>
                             </Tooltip>
                         </div>
-                      </div>
-                  </div>
-              </ButtonBase>
-          </div>
-        );
-    }
+                    </div>
+                </div>
+            </ButtonBase>
+        </div>
+    );
 }
-
-StorageBarCompoment.propTypes = {
-    classes: PropTypes.object.isRequired,
-};
 
 const StorageBar = connect(
     mapStateToProps,
     mapDispatchToProps
-)(withTranslation()(withStyles(styles)(withRouter(StorageBarCompoment))));
+)((withStyles(styles)(StorageBarComponent)));
 
 export default StorageBar;

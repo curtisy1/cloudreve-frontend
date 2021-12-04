@@ -1,6 +1,5 @@
-import { withTranslation } from "react-i18next";
-import React, { Component } from "react";
-import PropTypes from "prop-types";
+import { useTranslation } from "react-i18next";
+import React  from "react";
 import { connect } from "react-redux";
 import {
     LogoutVariant,
@@ -14,7 +13,7 @@ import {
     setUserPopover,
     toggleSnackbar,
 } from "../../actions";
-import { withRouter } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import Auth from "../../middleware/Auth";
 import {
     withStyles,
@@ -73,30 +72,30 @@ const styles = () => ({
     },
 });
 
-class UserAvatarPopoverCompoment extends Component {
-    handleClose = () => {
-        this.props.setUserPopover(null);
-    };
+function UserAvatarPopoverComponent(props) {
+    const { t} = useTranslation();
+    const location = useLocation();
+    const history = useHistory();
 
-    openURL = (url) => {
-        window.location.href = url;
-    };
+    function handleClose () {
+        props.setUserPopover(null);
+    }
 
-    sigOut = () => {
+    function sigOut () {
         API.delete("/user/session/")
             .then(() => {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
-                    this.props.t('You have logged out'),
+                    t('You have logged out'),
                     "success"
                 );
                 Auth.signout();
                 window.location.reload();
-                this.props.setSessionStatus(false);
+                props.setSessionStatus(false);
             })
             .catch((error) => {
-                this.props.toggleSnackbar(
+                props.toggleSnackbar(
                     "top",
                     "right",
                     error.message,
@@ -104,22 +103,21 @@ class UserAvatarPopoverCompoment extends Component {
                 );
             })
             .then(() => {
-                this.handleClose();
+                handleClose();
             });
-    };
+    }
 
-    render() {
-        const { classes } = this.props;
+        const { classes } = props;
         const user = Auth.GetUser();
         const isAdminPage = pathHelper.isAdminPage(
-            this.props.location.pathname
+            location.pathname
         );
 
         return (
           <Popover
-              open={this.props.anchorEl !== null}
-              onClose={this.handleClose}
-              anchorEl={this.props.anchorEl}
+              open={props.anchorEl !== null}
+              onClose={handleClose}
+              anchorEl={props.anchorEl}
               anchorOrigin={{
                   vertical: "bottom",
                   horizontal: "right",
@@ -133,20 +131,20 @@ class UserAvatarPopoverCompoment extends Component {
                   <div className={classes.visitorMenu}>
                       <Divider />
                       <MenuItem
-                          onClick={() => this.props.history.push("/login")}
+                          onClick={() => history.push("/login")}
                       >
                         <ListItemIcon>
                             <AccountArrowRight />
                         </ListItemIcon>
-                        {this.props.t('Log in')}
+                        {t('Log in')}
                       </MenuItem>
                       <MenuItem
-                          onClick={() => this.props.history.push("/signup")}
+                          onClick={() => history.push("/signup")}
                       >
                         <ListItemIcon>
                             <AccountPlus />
                         </ListItemIcon>
-                        {this.props.t('Register')}
+                        {t('Register')}
                       </MenuItem>
                   </div>
               )}
@@ -191,8 +189,8 @@ class UserAvatarPopoverCompoment extends Component {
                                       padding: " 11px 16px 11px 16px",
                                   }}
                                   onClick={() => {
-                                      this.handleClose();
-                                      this.props.history.push(
+                                      handleClose();
+                                      history.push(
                                           "/profile/" + user.id
                                       );
                                   }}
@@ -200,7 +198,7 @@ class UserAvatarPopoverCompoment extends Component {
                                 <ListItemIcon>
                                     <HomeAccount />
                                 </ListItemIcon>
-                                {this.props.t('Homepage')}
+                                {t('Homepage')}
                               </MenuItem>)
                           )}
                           {user.group.id === 1 && (
@@ -209,14 +207,14 @@ class UserAvatarPopoverCompoment extends Component {
                                       padding: " 11px 16px 11px 16px",
                                   }}
                                   onClick={() => {
-                                      this.handleClose();
-                                      this.props.history.push("/admin/home");
+                                      handleClose();
+                                      history.push("/admin/home");
                                   }}
                               >
                                 <ListItemIcon>
                                     <DesktopMacDashboard />
                                 </ListItemIcon>
-                                {this.props.t('Admin Panel')}
+                                {t('Admin Panel')}
                               </MenuItem>)
                           )}
 
@@ -224,28 +222,23 @@ class UserAvatarPopoverCompoment extends Component {
                               style={{
                                   padding: " 11px 16px 11px 16px",
                               }}
-                              onClick={this.sigOut}
+                              onClick={sigOut}
                           >
                             <ListItemIcon>
                                 <LogoutVariant />
                             </ListItemIcon>
-                            {this.props.t('Sign out')}
+                            {t('Sign out')}
                           </MenuItem>
                       </div>
                   </div>
               )}
           </Popover>
         );
-    }
 }
-
-UserAvatarPopoverCompoment.propTypes = {
-    classes: PropTypes.object.isRequired,
-};
 
 const UserAvatarPopover = connect(
     mapStateToProps,
     mapDispatchToProps
-)(withTranslation()(withStyles(styles)(withRouter(UserAvatarPopoverCompoment))));
+)((withStyles(styles)(UserAvatarPopoverComponent)));
 
 export default UserAvatarPopover;

@@ -9,7 +9,6 @@ import {
     toggleSnackbar,
 } from "../../actions";
 import { withStyles, Typography } from "@material-ui/core";
-import { withRouter } from "react-router-dom";
 import FileManager from "../FileManager/FileManager";
 import Paper from "@material-ui/core/Paper";
 import Popover from "@material-ui/core/Popover";
@@ -142,6 +141,6 @@ class SharedFolderComponent extends Component {
 const SharedFolder = connect(
     mapStateToProps,
     mapDispatchToProps
-)(withStyles(styles)(withRouter(SharedFolderComponent)));
+)(withStyles(styles)(SharedFolderComponent));
 
 export default SharedFolder;

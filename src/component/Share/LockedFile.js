@@ -1,5 +1,5 @@
-import { withTranslation } from "react-i18next";
-import React, { Component } from "react";
+import { useTranslation } from "react-i18next";
+import React, { useState } from "react";
 import { connect } from "react-redux";
 import { toggleSnackbar } from "../../actions";
 
@@ -12,17 +12,17 @@ import {
     CardContent,
     CardActions,
     TextField,
-    Avatar,
+    Avatar
 } from "@material-ui/core";
-import { withRouter } from "react-router";
+import { useLocation } from "react-router-dom";
 
 const styles = (theme) => ({
     card: {
         maxWidth: 400,
-        margin: "0 auto",
+        margin: "0 auto"
     },
     actions: {
-        display: "flex",
+        display: "flex"
     },
     layout: {
         width: "auto",
@@ -32,14 +32,14 @@ const styles = (theme) => ({
         [theme.breakpoints.up(1100 + theme.spacing(3) * 2)]: {
             width: 1100,
             marginLeft: "auto",
-            marginRight: "auto",
-        },
+            marginRight: "auto"
+        }
     },
     continue: {
         marginLeft: "auto",
         marginRight: "10px",
-        marginRottom: "10px",
-    },
+        marginRottom: "10px"
+    }
 });
 const mapStateToProps = () => {
     return {};
@@ -49,92 +49,90 @@ const mapDispatchToProps = (dispatch) => {
     return {
         toggleSnackbar: (vertical, horizontal, msg, color) => {
             dispatch(toggleSnackbar(vertical, horizontal, msg, color));
-        },
+        }
     };
 };
 
-class LockedFileCompoment extends Component {
-    constructor(props) {
-        super(props);
-        const query = new URLSearchParams(this.props.location.search);
-        this.state = {
-            pwd: query.get("password"),
+function LockedFileComponent(props) {
+    const location = useLocation();
+    const { t } = useTranslation();
+    const [state, setState] = useState({
+        pwd: new URLSearchParams(location.search).get("password")
+    });
+
+    function handleChange(name) {
+        return (event) => {
+            setState({ ...state, [name]: event.target.value });
         };
     }
 
-    handleChange = (name) => (event) => {
-        this.setState({ [name]: event.target.value });
-    };
-
-    submit = (e) => {
+    function submit(e) {
         e.preventDefault();
-        if (this.state.pwd === "") {
+        if (state.pwd === "") {
             return;
         }
-        this.props.setPassowrd(this.state.pwd);
-    };
-
-    render() {
-        const { classes } = this.props;
-
-        return (
-          <div className={classes.layout}>
-              <Card className={classes.card}>
-                  <CardHeader
-                      avatar={
-                          <Avatar
-                              aria-label="Recipe"
-                              src={
-                                  "/api/v3/user/avatar/" +
-                                  this.props.share.creator.key +
-                                  "/l"
-                              }
-                          />
-                      }
-                      title={this.props.share.creator.nick + this.props.t('\'S encrypted sharing')}
-                      subheader={this.props.share.create_date}
-                  />
-                  <Divider />
-                  <CardContent>
-                      <form onSubmit={this.submit}>
-                          <TextField
-                              id="pwd"
-                              label={this.props.t('Enter the sharing password"')}
-                              value={this.state.pwd}
-                              onChange={this.handleChange("pwd")}
-                              margin="normal"
-                              type="password"
-                              autoFocus
-                              fullWidth
-                              color="secondary"
-                          />
-                      </form>
-                  </CardContent>
-                  <CardActions
-                      className={classes.actions}
-                      disableActionSpacing
-                  >
-                      <Button
-                          onClick={this.submit}
-                          color="secondary"
-                          className={classes.continue}
-                          variant="contained"
-                          disabled={
-                              this.state.pwd === "" || this.props.loading
-                          }
-                      >
-                        {this.props.t('continue')}
-                      </Button>
-                  </CardActions>
-              </Card>
-          </div>
-        );
+        props.setPassowrd(state.pwd);
     }
+
+    const { classes } = props;
+
+    return (
+        <div className={classes.layout}>
+            <Card className={classes.card}>
+                <CardHeader
+                    avatar={
+                        <Avatar
+                            aria-label="Recipe"
+                            src={
+                                "/api/v3/user/avatar/" +
+                                props.share.creator.key +
+                                "/l"
+                            }
+                        />
+                    }
+                    title={props.share.creator.nick + t("'S encrypted sharing")}
+                    subheader={props.share.create_date}
+                />
+                <Divider />
+                <CardContent>
+                    <form onSubmit={submit}>
+                        <TextField
+                            id="pwd"
+                            label={t("Enter the sharing password\"")}
+                            value={state.pwd}
+                            onChange={handleChange("pwd")}
+                            margin="normal"
+                            type="password"
+                            autoFocus
+                            fullWidth
+                            color="secondary"
+                        />
+                    </form>
+                </CardContent>
+                <CardActions
+                    className={classes.actions}
+                    disableActionSpacing
+                >
+                    <Button
+                        onClick={submit}
+                        color="secondary"
+                        className={classes.continue}
+                        variant="contained"
+                        disabled={
+                            state.pwd === "" || props.loading
+                        }
+                    >
+                        {t("continue")}
+                    </Button>
+                </CardActions>
+            </Card>
+        </div>
+    );
 }
 
 const LockedFile = connect(
     mapStateToProps,
     mapDispatchToProps
-)(withTranslation()(withStyles(styles)(withRouter(LockedFileCompoment))));
+)((withStyles(styles)(LockedFileComponent)));
 
 export default LockedFile;
