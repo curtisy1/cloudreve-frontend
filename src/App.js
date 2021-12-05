@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense } from "react";
 import AuthRoute from "./middleware/AuthRoute";
 import Navbar from "./component/Navbar/Navbar.js";
 import useMediaQuery from "@material-ui/core/useMediaQuery";
@@ -31,6 +31,7 @@ import Reset from "./component/Login/Reset";
 import PageLoading from "./component/Placeholder/PageLoading";
 import CodeViewer from "./component/Viewer/Code";
 import { useTranslation } from "react-i18next";
+
 const PDFViewer = React.lazy(() =>
     import(/* webpackChunkName: "pdf" */ "./component/Viewer/PDF")
 );
@@ -56,9 +57,9 @@ export default function App() {
                     main:
                         themeConfig.palette.type === "dark"
                             ? lighten(themeConfig.palette.primary.main, 0.3)
-                            : themeConfig.palette.primary.main,
-                },
-            },
+                            : themeConfig.palette.primary.main
+                }
+            }
         });
         changeThemeColor(
             themeConfig.palette.type === "dark"
@@ -70,147 +71,201 @@ export default function App() {
 
     const useStyles = makeStyles((theme) => ({
         root: {
-            display: "flex",
+            display: "flex"
         },
         content: {
             flexGrow: 1,
             padding: theme.spacing(0),
-            minWidth: 0,
+            minWidth: 0
         },
-        toolbar: theme.mixins.toolbar,
+        toolbar: theme.mixins.toolbar
     }));
 
     const classes = useStyles();
 
     const { path } = useRouteMatch();
     return (
-      <React.Fragment>
-          <ThemeProvider theme={theme}>
-              <div className={classes.root} id="container">
-                  <CssBaseline />
-                  <AlertBar />
-                  <Navbar />
-                  <main className={classes.content}>
-                      <div className={classes.toolbar} />
-                      <Switch>
-                          <AuthRoute exact path={path} isLogin={isLogin}>
-                              <Redirect
-                                  to={{
-                                      pathname: "/home",
-                                  }}
-                              />
-                          </AuthRoute>
+        <React.Fragment>
+            <ThemeProvider theme={theme}>
+                <div className={classes.root} id="container">
+                    <CssBaseline />
+                    <AlertBar />
+                    <Navbar />
+                    <main className={classes.content}>
+                        <div className={classes.toolbar} />
+                        <Switch>
+                            <Route exact path={path} render={() => (
+                                <AuthRoute isLogin={isLogin}>
+                                    <Redirect
+                                        to={{
+                                            pathname: "/home"
+                                        }}
+                                    />
+                                </AuthRoute>
+                            )}>
+                            </Route>
 
-                          <AuthRoute path={`${path}home`} isLogin={isLogin}>
-                              <FileManager />
-                          </AuthRoute>
+                            <Route path={`${path}home`} render={() => (
+                                <AuthRoute isLogin={isLogin}>
+                                    <FileManager />
+                                </AuthRoute>
+                            )}>
+                            </Route>
 
-                          <AuthRoute path={`${path}video`} isLogin={isLogin}>
-                              <VideoPreview />
-                          </AuthRoute>
+                            <Route path={`${path}video`} render={() => (
+                                <AuthRoute isLogin={isLogin}>
+                                    <VideoPreview />
 
-                          <AuthRoute path={`${path}text`} isLogin={isLogin}>
-                              <TextViewer />
-                          </AuthRoute>
+                                </AuthRoute>
+                            )}>
+                            </Route>
 
-                          <AuthRoute path={`${path}doc`} isLogin={isLogin}>
-                              <DocViewer />
-                          </AuthRoute>
+                            <Route path={`${path}text`} render={() => (
+                                <AuthRoute isLogin={isLogin}>
+                                    <TextViewer />
 
-                          <AuthRoute path={`${path}pdf`} isLogin={isLogin}>
-                              <Suspense fallback={<PageLoading />}>
-                                  <PDFViewer />
-                              </Suspense>
-                          </AuthRoute>
+                                </AuthRoute>
+                            )}>
+                            </Route>
 
-                          <AuthRoute path={`${path}code`} isLogin={isLogin}>
-                              <CodeViewer />
-                          </AuthRoute>
+                            <Route path={`${path}doc`} render={() => (
+                                <AuthRoute isLogin={isLogin}>
+                                    <DocViewer />
 
-                          <AuthRoute path={`${path}aria2`} isLogin={isLogin}>
-                              <Download />
-                          </AuthRoute>
+                                </AuthRoute>
+                            )}>
+                            </Route>
 
-                          <AuthRoute path={`${path}shares`} isLogin={isLogin}>
-                              <MyShare />
-                          </AuthRoute>
+                            <Route path={`${path}pdf`} render={() => (
+                                <AuthRoute isLogin={isLogin}>
+                                    <Suspense fallback={<PageLoading />}>
+                                        <PDFViewer />
+                                    </Suspense>
+                                </AuthRoute>
+                            )}>
 
-                          <Route path={`${path}search`} isLogin={isLogin}>
-                              <SearchResult />
-                          </Route>
+                            </Route>
 
-                          <Route path={`${path}setting`} isLogin={isLogin}>
-                              <UserSetting />
-                          </Route>
+                            <Route path={`${path}code`} render={() => (
+                                <AuthRoute isLogin={isLogin}>
+                                    <CodeViewer />
 
-                          <AuthRoute
-                              path={`${path}profile/:id`}
-                              isLogin={isLogin}
-                          >
-                              <Profile />
-                          </AuthRoute>
+                                </AuthRoute>
+                            )}>
+                            </Route>
 
-                          <AuthRoute path={`${path}webdav`} isLogin={isLogin}>
-                              <WebDAV />
-                          </AuthRoute>
+                            <Route path={`${path}aria2`} render={() => (
+                                <AuthRoute isLogin={isLogin}>
+                                    <Download />
 
-                          <AuthRoute path={`${path}tasks`} isLogin={isLogin}>
-                              <Tasks />
-                          </AuthRoute>
+                                </AuthRoute>
+                            )}>
+                            </Route>
 
-                          <Route path={`${path}login`} exact>
-                              <LoginForm />
-                          </Route>
+                            <Route path={`${path}shares`} render={() => (
+                                <AuthRoute isLogin={isLogin}>
+                                    <MyShare />
 
-                          <Route path={`${path}signup`} exact>
-                              <Register />
-                          </Route>
+                                </AuthRoute>
+                            )}>
+                            </Route>
 
-                          <Route path={`${path}activate`} exact>
-                              <Activation />
-                          </Route>
+                            <Route path={`${path}search`} render={() => (
+                                <AuthRoute isLogin={isLogin}>
+                                    <SearchResult />
+                                </AuthRoute>
+                            )}>
 
-                          <Route path={`${path}reset`} exact>
-                              <ResetForm />
-                          </Route>
+                            </Route>
 
-                          <Route path={`${path}forget`} exact>
-                              <Reset />
-                          </Route>
+                            <Route path={`${path}setting`} render={() => (
+                                <AuthRoute isLogin={isLogin}>
+                                    <UserSetting />
 
-                          <Route exact path={`${path}s/:id`}>
-                              <SharePreload />
-                          </Route>
+                                </AuthRoute>
+                            )}>
+                            </Route>
 
-                          <Route path={`${path}s/:id/video(/)*`}>
-                              <VideoPreview />
-                          </Route>
+                            <Route
+                                path={`${path}profile/:id`}
+                                render={() => (
+                                    <AuthRoute isLogin={isLogin}>
+                                        <Profile />
 
-                          <Route path={`${path}s/:id/doc(/)*`}>
-                              <DocViewer />
-                          </Route>
+                                    </AuthRoute>
+                                )}
+                            >
+                            </Route>
 
-                          <Route path={`${path}s/:id/text(/)*`}>
-                              <TextViewer />
-                          </Route>
+                            <Route path={`${path}webdav`} render={() => (
+                                <AuthRoute isLogin={isLogin}>
+                                    <WebDAV />
 
-                          <Route path={`${path}s/:id/pdf(/)*`}>
-                              <Suspense fallback={<PageLoading />}>
-                                  <PDFViewer />
-                              </Suspense>
-                          </Route>
+                                </AuthRoute>
+                            )}>
+                            </Route>
 
-                          <Route path={`${path}s/:id/code(/)*`}>
-                              <CodeViewer />
-                          </Route>
+                            <Route path={`${path}tasks`} render={() => (
+                                <AuthRoute isLogin={isLogin}>
+                                    <Tasks />
 
-                          <Route path="*">
-                              <NotFound msg={t('Page does not exist')} />
-                          </Route>
-                      </Switch>
-                  </main>
-              </div>
-          </ThemeProvider>
-      </React.Fragment>
+                                </AuthRoute>
+                            )}>
+                            </Route>
+
+                            <Route path={`${path}login`} exact>
+                                <LoginForm />
+                            </Route>
+
+                            <Route path={`${path}signup`} exact>
+                                <Register />
+                            </Route>
+
+                            <Route path={`${path}activate`} exact>
+                                <Activation />
+                            </Route>
+
+                            <Route path={`${path}reset`} exact>
+                                <ResetForm />
+                            </Route>
+
+                            <Route path={`${path}forget`} exact>
+                                <Reset />
+                            </Route>
+
+                            <Route exact path={`${path}s/:id`}>
+                                <SharePreload />
+                            </Route>
+
+                            <Route path={`${path}s/:id/video(/)*`}>
+                                <VideoPreview />
+                            </Route>
+
+                            <Route path={`${path}s/:id/doc(/)*`}>
+                                <DocViewer />
+                            </Route>
+
+                            <Route path={`${path}s/:id/text(/)*`}>
+                                <TextViewer />
+                            </Route>
+
+                            <Route path={`${path}s/:id/pdf(/)*`}>
+                                <Suspense fallback={<PageLoading />}>
+                                    <PDFViewer />
+                                </Suspense>
+                            </Route>
+
+                            <Route path={`${path}s/:id/code(/)*`}>
+                                <CodeViewer />
+                            </Route>
+
+                            <Route path="*">
+                                <NotFound msg={t("Page does not exist")} />
+                            </Route>
+                        </Switch>
+                    </main>
+                </div>
+            </ThemeProvider>
+        </React.Fragment>
     );
 }
