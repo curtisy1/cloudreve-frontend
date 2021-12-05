@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import AuthRoute from "./middleware/AuthRoute";
+import RequireAuth from "./middleware/AuthRoute";
 import Navbar from "./component/Navbar/Navbar.js";
 import useMediaQuery from "@material-ui/core/useMediaQuery";
 import AlertBar from "./component/Common/Snackbar";
@@ -95,121 +95,121 @@ export default function App() {
                         <div className={classes.toolbar} />
                         <Switch>
                             <Route exact path={path} render={() => (
-                                <AuthRoute isLogin={isLogin}>
+                                <RequireAuth isLogin={isLogin}>
                                     <Redirect
                                         to={{
                                             pathname: "/home"
                                         }}
                                     />
-                                </AuthRoute>
+                                </RequireAuth>
                             )}>
                             </Route>
 
                             <Route path={`${path}home`} render={() => (
-                                <AuthRoute isLogin={isLogin}>
+                                <RequireAuth isLogin={isLogin}>
                                     <FileManager />
-                                </AuthRoute>
+                                </RequireAuth>
                             )}>
                             </Route>
 
                             <Route path={`${path}video`} render={() => (
-                                <AuthRoute isLogin={isLogin}>
+                                <RequireAuth isLogin={isLogin}>
                                     <VideoPreview />
 
-                                </AuthRoute>
+                                </RequireAuth>
                             )}>
                             </Route>
 
                             <Route path={`${path}text`} render={() => (
-                                <AuthRoute isLogin={isLogin}>
+                                <RequireAuth isLogin={isLogin}>
                                     <TextViewer />
 
-                                </AuthRoute>
+                                </RequireAuth>
                             )}>
                             </Route>
 
                             <Route path={`${path}doc`} render={() => (
-                                <AuthRoute isLogin={isLogin}>
+                                <RequireAuth isLogin={isLogin}>
                                     <DocViewer />
 
-                                </AuthRoute>
+                                </RequireAuth>
                             )}>
                             </Route>
 
                             <Route path={`${path}pdf`} render={() => (
-                                <AuthRoute isLogin={isLogin}>
+                                <RequireAuth isLogin={isLogin}>
                                     <Suspense fallback={<PageLoading />}>
                                         <PDFViewer />
                                     </Suspense>
-                                </AuthRoute>
+                                </RequireAuth>
                             )}>
 
                             </Route>
 
                             <Route path={`${path}code`} render={() => (
-                                <AuthRoute isLogin={isLogin}>
+                                <RequireAuth isLogin={isLogin}>
                                     <CodeViewer />
 
-                                </AuthRoute>
+                                </RequireAuth>
                             )}>
                             </Route>
 
                             <Route path={`${path}aria2`} render={() => (
-                                <AuthRoute isLogin={isLogin}>
+                                <RequireAuth isLogin={isLogin}>
                                     <Download />
 
-                                </AuthRoute>
+                                </RequireAuth>
                             )}>
                             </Route>
 
                             <Route path={`${path}shares`} render={() => (
-                                <AuthRoute isLogin={isLogin}>
+                                <RequireAuth isLogin={isLogin}>
                                     <MyShare />
 
-                                </AuthRoute>
+                                </RequireAuth>
                             )}>
                             </Route>
 
                             <Route path={`${path}search`} render={() => (
-                                <AuthRoute isLogin={isLogin}>
+                                <RequireAuth isLogin={isLogin}>
                                     <SearchResult />
-                                </AuthRoute>
+                                </RequireAuth>
                             )}>
 
                             </Route>
 
                             <Route path={`${path}setting`} render={() => (
-                                <AuthRoute isLogin={isLogin}>
+                                <RequireAuth isLogin={isLogin}>
                                     <UserSetting />
 
-                                </AuthRoute>
+                                </RequireAuth>
                             )}>
                             </Route>
 
                             <Route
                                 path={`${path}profile/:id`}
                                 render={() => (
-                                    <AuthRoute isLogin={isLogin}>
+                                    <RequireAuth isLogin={isLogin}>
                                         <Profile />
 
-                                    </AuthRoute>
+                                    </RequireAuth>
                                 )}
                             >
                             </Route>
 
                             <Route path={`${path}webdav`} render={() => (
-                                <AuthRoute isLogin={isLogin}>
+                                <RequireAuth isLogin={isLogin}>
                                     <WebDAV />
 
-                                </AuthRoute>
+                                </RequireAuth>
                             )}>
                             </Route>
 
                             <Route path={`${path}tasks`} render={() => (
-                                <AuthRoute isLogin={isLogin}>
+                                <RequireAuth isLogin={isLogin}>
                                     <Tasks />
 
-                                </AuthRoute>
+                                </RequireAuth>
                             )}>
                             </Route>
 
